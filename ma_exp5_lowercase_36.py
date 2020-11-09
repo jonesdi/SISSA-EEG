@@ -10,7 +10,6 @@ import itertools
 #########################
 ##### settings  #########
 #########################
-
 #subject and output
 gui = psychopy.gui.Dlg()
 gui.addField("Subject ID:")
@@ -21,17 +20,17 @@ subjectId = gui.data[0]
 runs = int(gui.data[1])
 timeStamp = core.getAbsTime()
 outputFileName_pptResponse = 'out_' + subjectId + '_' + str(timeStamp) + '_refresh' + gui.data[2] + '.csv'
-
 refresh=144
 
 #preallocate ppts' responses
 runId = list() #run id
 stimuliDF = pd.DataFrame() #word & category
-presentationId = list() #word presentation id
+presentationId = list() #word presentation id - according to order of presentation (max 20)
 responseCatDF = pd.DataFrame() #response category & response time
 responseSure = list() #response sure
 
 response = pd.DataFrame() #overall result
+
 
 #set exmaples
 examples = [['pesce','animal'],['cellulare','object'],['uccello','animal'],['specchio','object']]
@@ -39,7 +38,10 @@ examples = pd.DataFrame(examples, columns=['word','cat'])
 #Stimuli = examples #to use fewer stumuli for test, i use examples for the main part as well
 
 #load the stimulus set
-Stimuli = pd.read_csv('D:/Ekaterina/stimuli_final.csv', delimiter=';')
+#Stimuli = pd.read_csv('D:/Ekaterina/stimuli_final.csv', delimiter=';')
+Stimuli = pd.read_csv('stimuli_final.csv', delimiter=';')
+
+### TO DO: thinking about data splitting/randomization, also depending on the number of runs etc
 Stimuli_1half = Stimuli[0:5]
 Stimuli_1half = Stimuli_1half.append(Stimuli[10:15])
 Fillers_1half = Stimuli[20:25]
@@ -52,6 +54,11 @@ Fillers_2half = Stimuli[25:30]
 Fillers_2half = Fillers_1half.append(Stimuli[40:45])
 Set_2 = pd.concat([Stimuli_2half, Fillers_2half])
 
+runs = 16 # 20 words per run: 5 animals, 5 objects, 10 fillers
+targets = [l for l in Stimuli if l[2] == 'target']
+fillers = [l for l in Stimuli if l[2] != 'target']
+
+
 NumStimuli=20
 NumTargets=10
 
@@ -60,6 +67,7 @@ NumTargets=10
 #########################
 
 #make window and mask
+### TO DO: adapting screen size to whatever size so as to avoid crashes/bugs
 win = visual.Window(size=[1920,1080], fullscr=False, color=[-1,-1,-1], units='pix')
 mask = visual.TextStim(win, text='##########', color=[.8,.8,.8], pos=[0,0], ori=0)
 
@@ -177,6 +185,8 @@ for runNum in range(runs):
     print_instr(MappingKeys,1)
     MappingHistory.append(Mapping)
 
+    ### TO DO: see above, randomize only once, making sure that stimuli are not presented more than once in each run
+
     #randomize the stimuli
     if runNum % 2 == 0:
         Set = Set_1
@@ -204,6 +214,7 @@ for runNum in range(runs):
         clock = core.Clock()
         draw(mask,int(refresh*2))
 
+        ## TO DO: clean up this part
         #press a key for category (prevents no response). here i decided that if the ppt accidentally presses the key twice, i take the second response, assuming that the ppt wanted to correct a mistake
         responseNotGiven = True
         while responseNotGiven:
