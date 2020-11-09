@@ -55,6 +55,7 @@ Fillers_2half = Fillers_1half.append(Stimuli[40:45])
 Set_2 = pd.concat([Stimuli_2half, Fillers_2half])
 
 runs = 16 # 20 words per run: 5 animals, 5 objects, 10 fillers
+
 targets = [l for l in Stimuli if l[2] == 'target']
 fillers = [l for l in Stimuli if l[2] != 'target']
 
