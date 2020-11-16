@@ -190,11 +190,11 @@ for runNum in range(1, actual_runs+1):
         if trialIndex<19:
             print_instr(win, instrGoOn,0)
     
-    assert len(runResults.items()) == 20
-    runDataFrame = pd.DataFrame([[k] + v for k, v in runResults.items()], columns=['Trial number', 'Word', 'Group','Trigger code', 'Prediction outcome', 'Response time', 'Certainty'])
-    runDataFrame.to_csv(os.path.join(subjectPath, 'run_{:02}_events_log.csv'.format(runNum)), index=False)
+    assert len(runResults.items()) == 20 # checking all went OK
+    runDataFrame = pd.DataFrame([[k] + v for k, v in runResults.items()], columns=['Trial number', 'Word', 'Group','Trigger code', 'Prediction outcome', 'Response time', 'Certainty']) # turning the dictionary into a pandas data frame
+    runDataFrame.to_csv(os.path.join(subjectPath, 'run_{:02}_events_log.csv'.format(runNum)), index=False) # exporting to file the pandas data frame
 
-    # rest 1 min or on keypress
+    # rest 1 min or continue on keypress
     if runNum<actual_runs:
         for _ in range(int(refresh*60)):
             restText = lambda run : 'Fine della sessione {} su 32 - ottimo lavoro!\n\n Se vuoi, ora hai fino a 1 minuto di pausa prima di cominciare la prossima sessione.\n\n [Altrimenti, premi la barra spaziatrice]'.format(run)
