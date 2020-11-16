@@ -5,21 +5,27 @@ import pandas as pd
 import random as rn
 import numpy as np
 import itertools
+import collections
+import random
 
 #########################
 ##### settings  #########
 #########################
-#subject and output
+
+#subject, runs, refresh rate and output
 gui = psychopy.gui.Dlg()
 gui.addField("Subject ID:")
 gui.addField("Number of runs:")
 gui.addField('Refresh cycles, 144/...')
 gui.show()
+
 subjectId = gui.data[0]
 runs = int(gui.data[1])
+refresh = int(gui.data[2])
+#refresh=144 # useless line
+
 timeStamp = core.getAbsTime()
 outputFileName_pptResponse = 'out_' + subjectId + '_' + str(timeStamp) + '_refresh' + gui.data[2] + '.csv'
-refresh=144
 
 #preallocate ppts' responses
 runId = list() #run id
@@ -31,15 +37,14 @@ responseSure = list() #response sure
 response = pd.DataFrame() #overall result
 
 
-#set exmaples
+#set examples
 examples = [['pesce','animal'],['cellulare','object'],['uccello','animal'],['specchio','object']]
 examples = pd.DataFrame(examples, columns=['word','cat'])
 #Stimuli = examples #to use fewer stumuli for test, i use examples for the main part as well
 
 #load the stimulus set
-#Stimuli = pd.read_csv('D:/Ekaterina/stimuli_final.csv', delimiter=';')
 Stimuli = pd.read_csv('stimuli_final.csv', delimiter=';')
-
+'''
 ### TO DO: thinking about data splitting/randomization, also depending on the number of runs etc
 Stimuli_1half = Stimuli[0:5]
 Stimuli_1half = Stimuli_1half.append(Stimuli[10:15])
@@ -52,12 +57,52 @@ Stimuli_2half = Stimuli_2half.append(Stimuli[15:20])
 Fillers_2half = Stimuli[25:30]
 Fillers_2half = Fillers_1half.append(Stimuli[40:45])
 Set_2 = pd.concat([Stimuli_2half, Fillers_2half])
+'''
 
-runs = 16 # 20 words per run: 5 animals, 5 objects, 10 fillers
+# Creating the 16 runs, which allow to obtain 8 trials per stimulus 
 
-targets = [l for l in Stimuli if l[2] == 'target']
-fillers = [l for l in Stimuli if l[2] != 'target']
+def create_run_splits(indices, runs=32): # creates a dictionary for either 16 or 32 runs
 
+    runs_dict = collections.defaultdict(list)
+    counter  = {k : 0 for k in indices}
+
+    for run in range(runs):
+
+        run_indices = [n for n in np.random.choice([k for k in counter.keys()], size=10, replace=False)] # randomizes the indices
+        run_counter = 0
+
+        for run_index in run_indices:
+            if run_index not in runs_dict[run] and counter[run_index] < 16 and run_counter <5: # some conditions to make sure stimuli are not repeated
+                if counter[run_index] > min([v for k, v in counter.items()]): # makes sure all stimuli are actually balanced in frequency
+                    run_indices.append(run_index)
+                else:
+                    runs_dict[run].append(run_index)
+                    counter[run_index] += 1
+                    run_counter += 1
+
+    # Check each stimulus is actually seen 8/16 times
+
+    check_counter = collections.defaultdict(int)
+    for k, v in runs_dict.items():
+        for item in v:
+            check_counter[item] += 1
+
+    return runs_dict
+
+runs = 32
+animal_targets = create_run_splits([k for k in range(10)], runs)
+object_targets = create_run_splits([k for k in range(10, 20)], runs)
+animal_fillers = create_run_splits([k for k in range(20, 30)], runs)
+object_fillers = create_run_splits([k for k in range(40, 50)], runs)
+
+final_runs = collections.defaultdict(list)
+for k in range(runs):
+    final_runs[k] += animal_targets[k]
+    final_runs[k] += object_targets[k]
+    final_runs[k] += animal_fillers[k]
+    final_runs[k] += animal_fillers[k]
+
+final_runs = {k : random.sample(v, k=len(v)) for k, v in final_runs.items()}
 
 NumStimuli=20
 NumTargets=10
@@ -126,7 +171,7 @@ MappingRand = pd.DataFrame.sample(Keys)
 Mapping = MappingRand['instr'][0]
 MappingKeys = visual.TextStim(win, text='{} \n Premi la barra'.format(Mapping), color=[.8,.8,.8])
 print_instr(MappingKeys,1)
-
+'''
 #start example trials
 for exampleNum in range (4):
 
@@ -163,8 +208,9 @@ for exampleNum in range (4):
     if exampleNum<3:
         instrGoOn = visual.TextStim(win, text='Premi la barra per procedere con la prossima parola. \n {}'.format(Mapping), color=[.8,.8,.8])
         print_instr(instrGoOn, 0.5)
-
+'''
 print_instr(instrMain,0.5)
+
 #########################
 #### start main exp #####
 ########################
@@ -185,6 +231,7 @@ for runNum in range(runs):
     print_instr(MappingKeys,1)
     MappingHistory.append(Mapping)
 
+    '''
     ### TO DO: see above, randomize only once, making sure that stimuli are not presented more than once in each run
 
     #randomize the stimuli
@@ -196,17 +243,21 @@ for runNum in range(runs):
     Set = Set.reset_index(drop=True)
     StimuliRand = Set.reindex(rn.sample(range(NumStimuli), NumStimuli))
     StimuliRand.index = range(NumStimuli) 
+    '''
 
     #start trials
-    for trialNum in range(NumStimuli):
+    #for trialNum in range(NumStimuli):
+    for trialNum in final_runs[runNum]:
 
         #temporary response for the trial
         responseCatTemp = ()
         responseSureTemp = ()
 
-        word = visual.TextStim(win, text=StimuliRand['word'][trialNum], color=[.8,.8,.8], pos=[0,0], ori=0)
+        #word = visual.TextStim(win, text=StimuliRand['word'][trialNum], color=[.8,.8,.8], pos=[0,0], ori=0)
+        word = visual.TextStim(win, text=Stimuli['word'][trialNum], color=[.8,.8,.8], pos=[0,0], ori=0)
         
-        if StimuliRand['group'][trialNum]=='target':
+        #if StimuliRand['group'][trialNum]=='target':
+        if Stimuli['group'][trialNum]=='target':
             presentationId.append(trialNum)
 
         draw(mask,int(refresh/2))
@@ -221,11 +272,13 @@ for runNum in range(runs):
             responseCatTemp = event.getKeys(keyList=['d','k'], timeStamped=clock)
             if len(responseCatTemp)==1:
                 responseNotGiven = False
-                if StimuliRand['group'][trialNum]=='target':
+                #if StimuliRand['group'][trialNum]=='target':
+                if Stimuli['group'][trialNum]=='target':
                     responseCatPerRun.append(responseCatTemp)
             elif len(responseCatTemp)>1:
                 responseNotGiven = False
-                if StimuliRand['group'][trialNum]=='target':
+                #if StimuliRand['group'][trialNum]=='target':
+                if Stimuli['group'][trialNum]=='target':
                     responseCatPerRun.append(responseCatTemp[1])
 
         win.flip()
@@ -236,13 +289,15 @@ for runNum in range(runs):
             question.draw(win=win)
             win.flip()
             responseSureTemp = event.waitKeys(keyList=['1','2','3'])
-            if StimuliRand['group'][trialNum]=='target':
+            #if StimuliRand['group'][trialNum]=='target':
+            if Stimuli['group'][trialNum]=='target':
                 responseSure.append(responseSureTemp)
         else: #to wait a little after the last trial
             question.draw(win=win)
             win.flip()
             responseSureTemp = event.waitKeys(keyList=['1','2','3'])
-            if StimuliRand['group'][trialNum]=='target':
+            #if StimuliRand['group'][trialNum]=='target':
+            if Stimuli['group'][trialNum]=='target':
                 responseSure.append(responseSureTemp)
             win.flip()
             core.wait(0.5)
@@ -255,9 +310,12 @@ for runNum in range(runs):
     #save the output for the run
     for _ in range(NumTargets):
         runId.append(str(runNum))
-    for _ in range (len(StimuliRand)):
-        if StimuliRand['group'][_]=='target':
-            stimuliDF = stimuliDF.append(StimuliRand.loc[_])
+    #for _ in range (len(StimuliRand)):
+    for _ in range (len(Stimuli)):
+        #if StimuliRand['group'][_]=='target':
+        if Stimuli['group'][_]=='target':
+            #stimuliDF = stimuliDF.append(StimuliRand.loc[_])
+            stimuliDF = stimuliDF.append(Stimuli.loc[_])
     stimuliDF.to_csv('stimuli_'+outputFileName_pptResponse, index=False)
     #map the keys of this run with the category and save the response
     responseCatPerRun = list(itertools.chain(*responseCatPerRun))
