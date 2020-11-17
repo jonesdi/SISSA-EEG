@@ -15,10 +15,14 @@ def print_instr(win, instr_type, wait):
     win.flip()
     core.wait(wait)
 
-def draw(win, stimulus, cycles):
+def draw(win, stimulus, cycles, relevant_stimulus=False):
+    if relevant_stimulus:
+        clock = core.Clock() # debug presentation time
     for _ in range(cycles):
         stimulus.draw(win=win)
         win.flip()
+    if relevant_stimulus:
+        print(clock.getTime()) # debug presentation time
 
 def randomize_splits(indices, runs): # creates a dictionary for either 16 or 32 runs
 

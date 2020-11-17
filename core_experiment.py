@@ -40,6 +40,9 @@ outputIdentifier = '{}_refresh_rate_{}'.format(timeNow, gui.data[2])
 subjectPath = os.path.join('results', outputIdentifier, 'sub_{:02}'.format(subjectId))
 os.makedirs(subjectPath, exist_ok=True) 
 
+staircaseSpeed = [n for n in range(30, 37)] # n=30 -> 33ms, n=36 -> 27 ms
+staircaseSpeedIndex = 4 # -> 30ms
+
 #load the stimulus set
 Stimuli = pd.read_csv('stimuli_final.csv', delimiter=';')
 
@@ -144,6 +147,9 @@ print_instr(win, instrMain,0.5)
 
 for runNum in range(1, actual_runs+1):
     
+    presentationSpeed = staircaseSpeed[staircaseSpeedIndex]
+    staircaseCounter = {'correct' : 0, 'wrong' : 0}
+    
     runResults = collections.defaultdict(list)
 
     print_instr(win, instrReminder, 1)
@@ -156,7 +162,7 @@ for runNum in range(1, actual_runs+1):
         
         draw(win, mask,int(refresh/2))
         #parallel.setData(trialNum) # Sending the EEG trigger, opening the parallel port with the trialNum number
-        draw(win, word,int(refresh/36))
+        draw(win, word,int(refresh/presentationSpeed), relevant_stimulus=True)
         #parallel.setData(0) # Closing the parallel port
         clock = core.Clock()
         win.flip()
@@ -182,6 +188,9 @@ for runNum in range(1, actual_runs+1):
         # Checking whether the response is correct or not
         trialCategory = Stimuli['category'][trialStimulus]
         predictionOutcome = 'correct' if trialCategory == keysMapping[responseKey] else 'wrong'
+
+        # Staircase dictionary update
+        staircaseCounter[predictionOutcome] += 1
         
         # Updating the results dictionary with: word, group, trigger code/word index, correct/wrong prediction, response time
         runResults[trialIndex+1] = [trialWord, Stimuli['group'][trialStimulus], trialStimulus, predictionOutcome, responseTime, responseCertainty]
@@ -193,6 +202,13 @@ for runNum in range(1, actual_runs+1):
     assert len(runResults.items()) == 20 # checking all went OK
     runDataFrame = pd.DataFrame([[k] + v for k, v in runResults.items()], columns=['Trial number', 'Word', 'Group','Trigger code', 'Prediction outcome', 'Response time', 'Certainty']) # turning the dictionary into a pandas data frame
     runDataFrame.to_csv(os.path.join(subjectPath, 'run_{:02}_events_log.csv'.format(runNum)), index=False) # exporting to file the pandas data frame
+
+    if runNum > 1:
+        # Staircase correction, ranging from 27 to 33 ms
+        if staircaseCounter['corretto'] > 8:
+            staircaseSpeedIndex = min([staircaseSpeedIndex+1, staircaseSpeed[-1]])   
+        elif staircaseCounter['wrong'] > 8:
+            staircaseSpeedIndex = max([staircaseSpeedIndex-1, staircaseSpeed[0]])   
 
     # rest 1 min or continue on keypress
     if runNum<actual_runs:
