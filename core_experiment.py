@@ -21,7 +21,7 @@ from utils import draw, format_instr, print_instr, create_run_splits
 #port_number = 00000
 #parallel.setPortAddress(port_number)
 
-#subject, actual runs to be ran (out of 32), refresh rate and output
+### subject, actual runs to be ran (out of 32), refresh rate of the screen
 gui = psychopy.gui.Dlg()
 gui.addField("Subject ID:")
 gui.addField("Number of runs:")
@@ -35,12 +35,14 @@ refresh = int(gui.data[2])
 keysMapping = {'k' : 'object', 'd' : 'animal'}
 timeStamp = core.getAbsTime()
 
+### Setting and creating the output folder
+
 timeNow = time.strftime('%d_%b_%Hh%M', time.gmtime())
 outputIdentifier = '{}_refresh_rate_{}'.format(timeNow, gui.data[2])
 subjectPath = os.path.join('results', outputIdentifier, 'sub_{:02}'.format(subjectId))
 os.makedirs(subjectPath, exist_ok=True) 
 
-# Preparing the staircase procedure
+### Preparing the staircase procedure
 if refresh == 59:
     staircaseFrames = [2,3] # possible presentation times: 2=32ms, 3=48ms
     staircaseFramesIndex = 0 
@@ -50,10 +52,10 @@ else:
     
 presentationFrames = staircaseFrames[staircaseFramesIndex]
 
-#load the stimulus set
+### load the stimulus set
 Stimuli = pd.read_csv('stimuli_final.csv', delimiter=';')
 
-# Creating the n runs, which allow to obtain n/2 trials per stimulus 
+### Creating the n runs, which allow to obtain n/2 trials per stimulus 
 
 runs = 32
 final_runs = create_run_splits(runs)
@@ -62,12 +64,12 @@ final_runs = create_run_splits(runs)
 ##### instructions ######
 #########################
 
-#make window and mask
+### make window and mask
 ### TO DO: adapting screen size to whatever size so as to avoid crashes/bugs
 win = visual.Window(size=[1920,1080], fullscr=False, color=[-1,-1,-1], units='pix')
 mask = format_instr(win, text='##########')
 
-#main instructions
+###main instructions
 instrIntro1 = format_instr(win, text='In questo esperimento, vedrai una serie di parole presentate sullo schermo del computer. \n\n Compariranno una alla volta, e per un tempo molto breve. \n\nQualche volta sarà difficile vederle: non preoccuparti, è tutto previsto dall\'esperimento. Ti chiediamo di dirci se la parola che di volta in volta vedrai si riferisce a: \n\n - un animale \n\n - un oggetto inanimato. \n\n\n [Premi la barra spaziatrice per continuare]')
 
 # taking away the color coding
@@ -89,13 +91,13 @@ instrMain = format_instr(win, text='Ora procediamo con l\'esperimento vero e pro
 #### Show instructions #####
 ############################
 
-#show main instruction
+### show main instruction
 print_instr(win, instrIntro1,0)
 print_instr(win, instrIntro2,0)
 print_instr(win, instrIntro3,0)
 print_instr(win, instrIntro4,0.5)
 
-# Show example instructions
+### Show example instructions
 print_instr(win, StartExample, 0.5)
 print_instr(win, instrReminder, 1)
 
@@ -103,10 +105,10 @@ print_instr(win, instrReminder, 1)
 #start example trials
 #####################
 
-# Selecting random words from the stimuli
+# Selecting random words from the left-out filler stimuli
 randomIndices = random.choices([k for k in range(30, 35)], k=2) + random.choices([k for k in range(35, 40)], k=2)
 
-#Starting the 4 pre-experiment trials
+### Starting the 4 pre-experiment trials
 for exampleNum, exampleIndex in enumerate(randomIndices):
 
     exampleWord = Stimuli['word'][exampleIndex]
@@ -115,7 +117,7 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     draw(win, mask,int(refresh/2))
     draw(win, exampleStimulus ,int(presentationFrames), relevant_stimulus=True)
 
-    # Waiting for an answer and then collecting it
+    ### Waiting for an answer and then collecting it
         
     responseNotGiven = True
     while responseNotGiven:
@@ -130,7 +132,7 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
 
     win.flip()
 
-    #feedback
+    ### feedback
     outcome = 'Corretto' if keysMapping[responseKey] == Stimuli['category'][exampleIndex] else 'Sbagliato'
     outcomeExample = lambda outcome, word: '{}!\n\nLa parola era \'{}\''.format(outcome, word)
     format_instr(win, text=outcomeExample(outcome, exampleWord)).draw(win=win)
@@ -142,13 +144,13 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     win.flip()
     responseSureTemp = event.waitKeys(keyList=['1','2','3'])
 
-    #press space to go to next trial
+    ### press space to go to next trial
     if exampleNum<3:
         print_instr(win, instrGoOn, 0.5)
 
 #########################
 #### start main exp #####
-########################
+#########################
 
 print_instr(win, instrMain,0.5)
 
@@ -161,7 +163,7 @@ for runNum in range(1, actual_runs+1):
 
     print_instr(win, instrReminder, 1)
 
-    #start trials
+    ### start trials
     for trialIndex, trialStimulus in enumerate(final_runs[runNum]):
 
         trialWord = Stimuli['word'][trialStimulus]
@@ -177,7 +179,7 @@ for runNum in range(1, actual_runs+1):
         clock = core.Clock()
         win.flip()
 
-        # Waiting for an answer and then collecting it
+        ### Waiting for an answer and then collecting it
         
         responseNotGiven = True
         while responseNotGiven:
@@ -190,36 +192,39 @@ for runNum in range(1, actual_runs+1):
 
         win.flip()
 
-        #ask how sure you are
+        ### ask how sure you are
         question.draw(win=win)
         win.flip()
         responseCertainty = event.waitKeys(keyList=['1','2','3'])[0]
         
-        # Checking whether the response is correct or not
+        ### Checking whether the response is correct or not
         trialCategory = Stimuli['category'][trialStimulus]
         predictionOutcome = 'correct' if trialCategory == keysMapping[responseKey] else 'wrong'
 
-        # Staircase dictionary update
+        ### Staircase dictionary update
         staircaseCounter[predictionOutcome] += 1
         
-        # Updating the results dictionary with: word, group, trigger code/word index, correct/wrong prediction, response time
+        ### Updating the results dictionary with: word, group, trigger code/word index, correct/wrong prediction, response time, stimulus duration
         runResults[trialIndex+1] = [trialWord, Stimuli['group'][trialStimulus], trialStimulus, predictionOutcome, responseTime, responseCertainty, stimulusDuration]
 
         #press space to go to next trial, or the next run if that's the end
         if trialIndex<19:
             print_instr(win, instrGoOn,0)
     
-    assert len(runResults.items()) == 20 # checking all went OK
+    #assert len(runResults.items()) == 20 # debugging: checking all went OK
+
+    ### Saving the output
     runDataFrame = pd.DataFrame([[k] + v for k, v in runResults.items()], columns=['Trial number', 'Word', 'Group','Trigger code', 'Prediction outcome', 'Response time', 'Certainty', 'Stimulus duration (ms)']) # turning the dictionary into a pandas data frame
     runDataFrame.to_csv(os.path.join(subjectPath, 'run_{:02}_events_log.csv'.format(runNum)), index=False) # exporting to file the pandas data frame
 
-    # Staircase correction, ranging from 27 to 33 ms
+    ### Staircase stimulus duration correction
     if staircaseCounter['correct'] > 16:
         staircaseFramesIndex = min([staircaseFramesIndex+1, staircaseFrames[-1]])   
     elif staircaseCounter['wrong'] > 16:
         staircaseFramesIndex = max([staircaseFramesIndex-1, staircaseFrames[0]])   
     presentationFrames = staircaseFrames[staircaseFramesIndex]
-    # rest 1 min or continue on keypress
+
+    ### rest 1 min or continue on keypress
     if runNum<actual_runs:
         for _ in range(int(refresh*60)):
             restText = lambda run : 'Fine della sessione {} su 32 - ottimo lavoro!\n\n Se vuoi, ora hai fino a 1 minuto di pausa prima di cominciare la prossima sessione.\n\n [Altrimenti, premi la barra spaziatrice]'.format(run)
