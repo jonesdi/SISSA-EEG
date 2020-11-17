@@ -40,8 +40,15 @@ outputIdentifier = '{}_refresh_rate_{}'.format(timeNow, gui.data[2])
 subjectPath = os.path.join('results', outputIdentifier, 'sub_{:02}'.format(subjectId))
 os.makedirs(subjectPath, exist_ok=True) 
 
-staircaseSpeed = [n for n in range(30, 37)] # n=30 -> 33ms, n=36 -> 27 ms
-staircaseSpeedIndex = 4 # -> 30ms
+# Preparing the staircase procedure
+if refresh == 59:
+    staircaseFrames = [2,3] # possible presentation times: 2=32ms, 3=48ms
+    staircaseFramesIndex = 0 
+else:
+    staircaseFrames = [4,5,6,7] # possible presentation times: 4=28ms, 5=35ms, 6=42ms, 7=49ms
+    staircaseFramesIndex = 2
+    
+presentationFrames = staircaseFrames[staircaseFramesIndex]
 
 #load the stimulus set
 Stimuli = pd.read_csv('stimuli_final.csv', delimiter=';')
@@ -97,7 +104,7 @@ print_instr(win, instrReminder, 1)
 #####################
 
 # Selecting random words from the stimuli
-randomIndices = random.choices([k for k in range(50)], k=4)
+randomIndices = random.choices([k for k in range(30, 35)], k=2) + random.choices([k for k in range(35, 40)], k=2)
 
 #Starting the 4 pre-experiment trials
 for exampleNum, exampleIndex in enumerate(randomIndices):
@@ -106,7 +113,7 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     exampleStimulus = format_instr(win, text=exampleWord)
 
     draw(win, mask,int(refresh/2))
-    draw(win, exampleStimulus,int(refresh/36))
+    draw(win, exampleStimulus ,int(presentationFrames), relevant_stimulus=True)
 
     # Waiting for an answer and then collecting it
         
@@ -147,7 +154,7 @@ print_instr(win, instrMain,0.5)
 
 for runNum in range(1, actual_runs+1):
     
-    presentationSpeed = staircaseSpeed[staircaseSpeedIndex]
+    
     staircaseCounter = {'correct' : 0, 'wrong' : 0}
     
     runResults = collections.defaultdict(list)
@@ -162,7 +169,10 @@ for runNum in range(1, actual_runs+1):
         
         draw(win, mask,int(refresh/2))
         #parallel.setData(trialNum) # Sending the EEG trigger, opening the parallel port with the trialNum number
-        draw(win, word,int(refresh/presentationSpeed), relevant_stimulus=True)
+        #draw(win, word,int(refresh/presentationFrames), relevant_stimulus=True)
+        clock = core.Clock() # starts measuring stimulus presentation time
+        draw(win, word,int(presentationFrames), relevant_stimulus=True)
+        stimulusDuration = clock.getTime() # stores stimulus presentation duration
         #parallel.setData(0) # Closing the parallel port
         clock = core.Clock()
         win.flip()
@@ -193,23 +203,22 @@ for runNum in range(1, actual_runs+1):
         staircaseCounter[predictionOutcome] += 1
         
         # Updating the results dictionary with: word, group, trigger code/word index, correct/wrong prediction, response time
-        runResults[trialIndex+1] = [trialWord, Stimuli['group'][trialStimulus], trialStimulus, predictionOutcome, responseTime, responseCertainty]
+        runResults[trialIndex+1] = [trialWord, Stimuli['group'][trialStimulus], trialStimulus, predictionOutcome, responseTime, responseCertainty, stimulusDuration]
 
         #press space to go to next trial, or the next run if that's the end
         if trialIndex<19:
             print_instr(win, instrGoOn,0)
     
     assert len(runResults.items()) == 20 # checking all went OK
-    runDataFrame = pd.DataFrame([[k] + v for k, v in runResults.items()], columns=['Trial number', 'Word', 'Group','Trigger code', 'Prediction outcome', 'Response time', 'Certainty']) # turning the dictionary into a pandas data frame
+    runDataFrame = pd.DataFrame([[k] + v for k, v in runResults.items()], columns=['Trial number', 'Word', 'Group','Trigger code', 'Prediction outcome', 'Response time', 'Certainty', 'Stimulus duration (ms)']) # turning the dictionary into a pandas data frame
     runDataFrame.to_csv(os.path.join(subjectPath, 'run_{:02}_events_log.csv'.format(runNum)), index=False) # exporting to file the pandas data frame
 
-    if runNum > 1:
-        # Staircase correction, ranging from 27 to 33 ms
-        if staircaseCounter['corretto'] > 8:
-            staircaseSpeedIndex = min([staircaseSpeedIndex+1, staircaseSpeed[-1]])   
-        elif staircaseCounter['wrong'] > 8:
-            staircaseSpeedIndex = max([staircaseSpeedIndex-1, staircaseSpeed[0]])   
-
+    # Staircase correction, ranging from 27 to 33 ms
+    if staircaseCounter['correct'] > 16:
+        staircaseFramesIndex = min([staircaseFramesIndex+1, staircaseFrames[-1]])   
+    elif staircaseCounter['wrong'] > 16:
+        staircaseFramesIndex = max([staircaseFramesIndex-1, staircaseFrames[0]])   
+    presentationFrames = staircaseFrames[staircaseFramesIndex]
     # rest 1 min or continue on keypress
     if runNum<actual_runs:
         for _ in range(int(refresh*60)):
