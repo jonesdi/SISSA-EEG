@@ -19,7 +19,7 @@ from utils import draw, format_instr, print_instr, create_run_splits
 # Setting the parallel port for EEG triggers
 
 port_number = 888
-outputPort = parallel.ParallelPort(port_number)
+#outputPort.= parallel.ParallelPort(port_number)
 
 ### subject, actual runs to be ran (out of 32), refresh rate of the screen
 gui = psychopy.gui.Dlg()
@@ -78,6 +78,7 @@ instrIntro2 = format_instr(win, text='Cerca di rispondere il più velocemente po
 instrIntro3 = format_instr(win, text='Dopo che avrai premuto il tasto, ti chiederemo anche quanto sicura/o sei della tua risposta. \n\nCome dicevamo, la parola potrebbe essere difficile da vedere in qualche occasione, per cui a volte sarai più sicura/o della tua risposta, a volte meno. \n\nVedrai la domanda sullo schermo. Per indicare quanto sei sicuro/a, potrai usare i tasti:\n\n - 1 (per niente sicura/o)\n\n- 2 (abbastanza sicura/o)\n\n - 3 (molto sicura/o). \n\n\n [Premi la barra spaziatrice per continuare]')
 instrIntro4 = format_instr(win, text='È importante che cerchi di rispondere alla domanda animale/oggetto inanimato anche quando ti sembrerà di non aver letto la parola per nulla. \n\nIn quei casi, fidati del tuo intuito, anche se sarai poco sicura/o della tua risposta. \n\n\n [Premi la barra spaziatrice per fare una prova]')
 instrReminder = format_instr(win, text='Ricorda, i tasti sono: \n\n - D per gli animali \n\n - K per gli oggetti inanimati \n\n\n [Premi la barra spaziatrice]')
+questionStimulus = format_instr(win, text='animale (D)\t\t\toppure\t\t\toggetto inanimato (K)?\n')
 instrGoOn = format_instr(win, text='[Premi la barra spaziatrice per procedere con la prossima parola] \n')
 question = format_instr(win, text='Dicci per favore quanto sei sicura/o della tua risposta, premendo: \n\n - 1 (per niente sicura/o)\n\n- 2 (abbastanza sicura/o)\n\n - 3 (molto sicura/o)')
 AfterRest = format_instr(win, text='Procediamo! \n\n\n [Premi la barra spaziatrice]')
@@ -116,6 +117,7 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
 
     draw(win, mask,int(refresh/2))
     draw(win, exampleStimulus ,int(presentationFrames), relevant_stimulus=True)
+    draw(win, mask,int(refresh))
 
     ### Waiting for an answer and then collecting it
         
@@ -123,7 +125,7 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     while responseNotGiven:
             
         #draw(win, mask,int(refresh*2))
-        mask.draw(win=win)
+        questionStimulus.draw(win=win)
         win.flip()
         responses = event.waitKeys(keyList=['d','k'])
         responseKey = responses[0]
@@ -175,21 +177,22 @@ for runNum in range(1, actual_runs+1):
         word = format_instr(win, text=trialWord)
         
         draw(win, mask,int(refresh/2))
-        outputPort.setData(trialStimulus) # Sending the EEG trigger, opening the parallel port with the trialNum number
+        #outputPort.setData(trialStimulus) # Sending the EEG trigger, opening the parallel port with the trialNum number
         #draw(win, word,int(refresh/presentationFrames), relevant_stimulus=True)
         clock = core.Clock() # starts measuring stimulus presentation time
         draw(win, word,int(presentationFrames), relevant_stimulus=True)
         stimulusDuration = clock.getTime() # stores stimulus presentation duration
-        outputPort.setData(0) # Closing the parallel port
+        #outputPort.setData(0) # Closing the parallel port
         clock = core.Clock()
-        win.flip()
+        #win.flip()
+        draw(win, mask,int(refresh))
 
         ### Waiting for an answer and then collecting it
         
         responseNotGiven = True
         while responseNotGiven:
             
-            mask.draw(win=win)
+            questionStimulus.draw(win=win)
             win.flip()
             responses = event.waitKeys(keyList=['d','k'], timeStamped=clock)
             responseKey, responseTime = responses[0][0], responses[0][1]
