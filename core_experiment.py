@@ -156,7 +156,9 @@ print_instr(win, instrMain,0.5)
 
 for runNum in range(1, actual_runs+1):
     
-    
+    ### selecting the indices for randomizing the case for 10 words out of 20 in the run
+    wordCaseRandomizer = random.choices(final_runs[runNum], k=10)
+
     staircaseCounter = {'correct' : 0, 'wrong' : 0}
     
     runResults = collections.defaultdict(list)
@@ -167,6 +169,9 @@ for runNum in range(1, actual_runs+1):
     for trialIndex, trialStimulus in enumerate(final_runs[runNum]):
 
         trialWord = Stimuli['word'][trialStimulus]
+        ### correcting the word case if needed
+        if trialStimulus in wordCaseRandomizer:
+            trialWord = trialWord.upper()
         word = format_instr(win, text=trialWord)
         
         draw(win, mask,int(refresh/2))
@@ -205,7 +210,7 @@ for runNum in range(1, actual_runs+1):
         staircaseCounter[predictionOutcome] += 1
         
         ### Updating the results dictionary with: word, group, trigger code/word index, correct/wrong prediction, response time, stimulus duration
-        runResults[trialIndex+1] = [trialWord, Stimuli['group'][trialStimulus], trialStimulus, predictionOutcome, responseTime, responseCertainty, stimulusDuration]
+        runResults[trialIndex+1] = [trialWord.lower(), Stimuli['group'][trialStimulus], trialStimulus, predictionOutcome, responseTime, responseCertainty, stimulusDuration]
 
         #press space to go to next trial, or the next run if that's the end
         if trialIndex<19:
