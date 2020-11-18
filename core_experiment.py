@@ -18,8 +18,8 @@ from utils import draw, format_instr, print_instr, create_run_splits
 
 # Setting the parallel port for EEG triggers
 
-#port_number = 00000
-#parallel.setPortAddress(port_number)
+port_number = 888
+outputPort = parallel.ParallelPort(port_number)
 
 ### subject, actual runs to be ran (out of 32), refresh rate of the screen
 gui = psychopy.gui.Dlg()
@@ -175,12 +175,12 @@ for runNum in range(1, actual_runs+1):
         word = format_instr(win, text=trialWord)
         
         draw(win, mask,int(refresh/2))
-        #parallel.setData(trialNum) # Sending the EEG trigger, opening the parallel port with the trialNum number
+        outputPort.setData(trialStimulus) # Sending the EEG trigger, opening the parallel port with the trialNum number
         #draw(win, word,int(refresh/presentationFrames), relevant_stimulus=True)
         clock = core.Clock() # starts measuring stimulus presentation time
         draw(win, word,int(presentationFrames), relevant_stimulus=True)
         stimulusDuration = clock.getTime() # stores stimulus presentation duration
-        #parallel.setData(0) # Closing the parallel port
+        outputPort.setData(0) # Closing the parallel port
         clock = core.Clock()
         win.flip()
 
