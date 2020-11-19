@@ -15,7 +15,7 @@ def print_instr(win, instr_type, wait):
     win.flip()
     core.wait(wait)
 
-def draw(win, stimulus, cycles, relevant_stimulus=False):
+def draw(win, stimulus, cycles):
     for _ in range(cycles):
         stimulus.draw(win=win)
         win.flip()

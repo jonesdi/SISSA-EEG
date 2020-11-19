@@ -189,9 +189,9 @@ for runNum in range(1, actual_runs+1):
         
         draw(win, mask,int(refresh/2))
         outputPort.setData(int(trialStimulus)) # Sending the EEG trigger, opening the parallel port with the trialNum number
-        #draw(win, word,int(refresh/presentationFrames), relevant_stimulus=True)
+        #draw(win, word,int(refresh/presentationFrames))
         clock = core.Clock() # starts measuring stimulus presentation time
-        draw(win, word,int(presentationFrames), relevant_stimulus=True)
+        draw(win, word,int(presentationFrames))
         stimulusDuration = clock.getTime() # stores stimulus presentation duration
         outputPort.setData(0) # Closing the parallel port
         clock = core.Clock()
