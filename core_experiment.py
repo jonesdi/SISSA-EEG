@@ -32,7 +32,7 @@ subjectId = int(gui.data[0])
 actual_runs = int(gui.data[1])  
 refresh = int(gui.data[2])
 
-keysMapping = {'k' : 'object', 'd' : 'animal'}
+keysMapping = [{'k' : 'object', 'd' : 'animal'}, {'d' : 'object', 'k' :  'animal'}] 
 timeStamp = core.getAbsTime()
 
 ### Setting and creating the output folder
@@ -74,11 +74,12 @@ instrIntro1 = format_instr(win, text='In questo esperimento, vedrai una serie di
 
 # taking away the color coding
 #instrIntro2 = format_instr(win, text='Cerca di rispondere il più velocemente possibile, usando il tasto D (rosso) per gli animali e il tasto K (verde) per gli oggetti inanimati. \n Talvolta i tasti corrispondenti cambieranno, verrai informato prima di ogni sezione dell\'esperimento. \n \n [Premi la barra spaziatrice per continuare]')
-instrIntro2 = format_instr(win, text='Cerca di rispondere il più velocemente possibile, premendo: \n\n- il tasto D per gli animali\n\n- il tasto K per gli oggetti inanimati. \n\n\n [Premi la barra spaziatrice per continuare]')
+instrIntro2 = format_instr(win, text='Cerca di rispondere il più velocemente possibile, premendo: \n\n- il tasto D per gli animali\n\n- il tasto K per gli oggetti inanimati. \n\n Talvolta i tasti si invertiranno, ma te lo diremo prima di ogni sezione.\n\n\n [Premi la barra spaziatrice per continuare]')
 instrIntro3 = format_instr(win, text='Dopo che avrai premuto il tasto, ti chiederemo anche quanto sicura/o sei della tua risposta. \n\nCome dicevamo, la parola potrebbe essere difficile da vedere in qualche occasione, per cui a volte sarai più sicura/o della tua risposta, a volte meno. \n\nVedrai la domanda sullo schermo. Per indicare quanto sei sicuro/a, potrai usare i tasti:\n\n - 1 (per niente sicura/o)\n\n- 2 (abbastanza sicura/o)\n\n - 3 (molto sicura/o). \n\n\n [Premi la barra spaziatrice per continuare]')
 instrIntro4 = format_instr(win, text='È importante che cerchi di rispondere alla domanda animale/oggetto inanimato anche quando ti sembrerà di non aver letto la parola per nulla. \n\nIn quei casi, fidati del tuo intuito, anche se sarai poco sicura/o della tua risposta. \n\n\n [Premi la barra spaziatrice per fare una prova]')
-instrReminder = format_instr(win, text='Ricorda, i tasti sono: \n\n - D per gli animali \n\n - K per gli oggetti inanimati \n\n\n [Premi la barra spaziatrice]')
-questionStimulus = format_instr(win, text='animale (D)\t\t\toppure\t\t\toggetto inanimato (K)?\n')
+#instrReminder = format_instr(win, text='I tasti per questa sessione sono: \n\n - D per gli animali \n\n - K per gli oggetti inanimati \n\n\n [Premi la barra spaziatrice]')
+instrRandomMapping = lambda animalKey, objectKey : 'I tasti per questa sessione sono: \n\n - {} per gli animali \n\n - {} per gli oggetti inanimati \n\n\n [Premi la barra spaziatrice]'.format(objectKey.upper(), animalKey.upper())
+questionStimulus = lambda animalKey, objectKey : 'animale ({})\n\noppure\n\noggetto inanimato ({})?\n'.format(objectKey.upper(), animalKey.upper())
 instrGoOn = format_instr(win, text='[Premi la barra spaziatrice per procedere con la prossima parola] \n')
 question = format_instr(win, text='Dicci per favore quanto sei sicura/o della tua risposta, premendo: \n\n - 1 (per niente sicura/o)\n\n- 2 (abbastanza sicura/o)\n\n - 3 (molto sicura/o)')
 AfterRest = format_instr(win, text='Procediamo! \n\n\n [Premi la barra spaziatrice]')
@@ -100,7 +101,10 @@ print_instr(win, instrIntro4,0.5)
 
 ### Show example instructions
 print_instr(win, StartExample, 0.5)
-print_instr(win, instrReminder, 1)
+trialKeysMapping = keysMapping[0]
+randomMapping = format_instr(win, instrRandomMapping([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+#print_instr(win, instrReminder, 1)
+print_instr(win, randomMapping, 1)
 
 #####################
 #start example trials
@@ -125,7 +129,9 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     while responseNotGiven:
             
         #draw(win, mask,int(refresh*2))
-        questionStimulus.draw(win=win)
+        questionRandom = format_instr(win, questionStimulus([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+        questionRandom.draw(win=win)
+        #questionStimulus.draw(win=win)
         win.flip()
         responses = event.waitKeys(keyList=['d','k'])
         responseKey = responses[0]
@@ -135,7 +141,7 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     win.flip()
 
     ### feedback
-    outcome = 'Corretto' if keysMapping[responseKey] == Stimuli['category'][exampleIndex] else 'Sbagliato'
+    outcome = 'Corretto' if trialKeysMapping[responseKey] == Stimuli['category'][exampleIndex] else 'Sbagliato'
     outcomeExample = lambda outcome, word: '{}!\n\nLa parola era \'{}\''.format(outcome, word)
     format_instr(win, text=outcomeExample(outcome, exampleWord)).draw(win=win)
     win.flip()
@@ -157,6 +163,8 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
 print_instr(win, instrMain,0.5)
 
 for runNum in range(1, actual_runs+1):
+
+    trialKeysMapping = keysMapping[random.choice([0, 1])]
     
     ### selecting the indices for randomizing the case for 10 words out of 20 in the run
     wordCaseRandomizer = random.choices(final_runs[runNum], k=10)
@@ -164,8 +172,8 @@ for runNum in range(1, actual_runs+1):
     staircaseCounter = {'correct' : 0, 'wrong' : 0}
     
     runResults = collections.defaultdict(list)
-
-    print_instr(win, instrReminder, 1)
+    randomMapping = format_instr(win, instrRandomMapping([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+    print_instr(win, randomMapping, 1)
 
     ### start trials
     for trialIndex, trialStimulus in enumerate(final_runs[runNum]):
@@ -192,7 +200,8 @@ for runNum in range(1, actual_runs+1):
         responseNotGiven = True
         while responseNotGiven:
             
-            questionStimulus.draw(win=win)
+            questionRandom = format_instr(win, questionStimulus([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+            questionRandom.draw(win=win)
             win.flip()
             responses = event.waitKeys(keyList=['d','k'], timeStamped=clock)
             responseKey, responseTime = responses[0][0], responses[0][1]
@@ -207,7 +216,7 @@ for runNum in range(1, actual_runs+1):
         
         ### Checking whether the response is correct or not
         trialCategory = Stimuli['category'][trialStimulus]
-        predictionOutcome = 'correct' if trialCategory == keysMapping[responseKey] else 'wrong'
+        predictionOutcome = 'correct' if trialCategory == trialKeysMapping[responseKey] else 'wrong'
 
         ### Staircase dictionary update
         staircaseCounter[predictionOutcome] += 1
