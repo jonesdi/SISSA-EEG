@@ -19,13 +19,14 @@ from utils import draw, format_instr, print_instr, create_run_splits
 # Setting the parallel port for EEG triggers
 
 port_number = 888
-#outputPort.= parallel.ParallelPort(port_number)
+outputPort = parallel.ParallelPort(port_number)
+outputPort.setData(0)
 
 ### subject, actual runs to be ran (out of 32), refresh rate of the screen
 gui = psychopy.gui.Dlg()
 gui.addField("Subject ID:")
-gui.addField("Number of runs:")
-gui.addField('Refresh cycles, 144/...')
+gui.addField("Number of runs to be run (default is 32)")
+gui.addField('Refresh rate')
 gui.show()
 
 subjectId = int(gui.data[0])
@@ -45,10 +46,10 @@ os.makedirs(subjectPath, exist_ok=True)
 ### Preparing the staircase procedure
 if refresh == 59:
     staircaseFrames = [2,3] # possible presentation times: 2=32ms, 3=48ms
-    staircaseFramesIndex = 0 
+    staircaseFramesIndex = 0 # default index
 else:
-    staircaseFrames = [4,5,6,7] # possible presentation times: 4=28ms, 5=35ms, 6=42ms, 7=49ms
-    staircaseFramesIndex = 2
+    staircaseFrames = [3,4,5,6,7] # possible presentation times: 4=28ms, 5=35ms, 6=42ms, 7=49ms
+    staircaseFramesIndex = 1 # default index
     
 presentationFrames = staircaseFrames[staircaseFramesIndex]
 
@@ -179,18 +180,20 @@ for runNum in range(1, actual_runs+1):
     for trialIndex, trialStimulus in enumerate(final_runs[runNum]):
 
         trialWord = Stimuli['word'][trialStimulus]
+        '''
         ### correcting the word case if needed
         if trialStimulus in wordCaseRandomizer:
             trialWord = trialWord.upper()
+        '''
         word = format_instr(win, text=trialWord)
         
         draw(win, mask,int(refresh/2))
-        #outputPort.setData(trialStimulus) # Sending the EEG trigger, opening the parallel port with the trialNum number
+        outputPort.setData(int(trialStimulus)) # Sending the EEG trigger, opening the parallel port with the trialNum number
         #draw(win, word,int(refresh/presentationFrames), relevant_stimulus=True)
         clock = core.Clock() # starts measuring stimulus presentation time
         draw(win, word,int(presentationFrames), relevant_stimulus=True)
         stimulusDuration = clock.getTime() # stores stimulus presentation duration
-        #outputPort.setData(0) # Closing the parallel port
+        outputPort.setData(0) # Closing the parallel port
         clock = core.Clock()
         #win.flip()
         draw(win, mask,int(refresh))
@@ -235,10 +238,10 @@ for runNum in range(1, actual_runs+1):
     runDataFrame.to_csv(os.path.join(subjectPath, 'run_{:02}_events_log.csv'.format(runNum)), index=False) # exporting to file the pandas data frame
 
     ### Staircase stimulus duration correction
-    if staircaseCounter['correct'] > 16:
-        staircaseFramesIndex = min([staircaseFramesIndex+1, staircaseFrames[-1]])   
-    elif staircaseCounter['wrong'] > 16:
-        staircaseFramesIndex = max([staircaseFramesIndex-1, staircaseFrames[0]])   
+    if staircaseCounter['wrong'] > 16:
+        staircaseFramesIndex = min([staircaseFramesIndex+1, len(staircaseFrames)-1])   
+    elif staircaseCounter['correct'] > 16:
+        staircaseFramesIndex = max([staircaseFramesIndex-1, 0])   
     presentationFrames = staircaseFrames[staircaseFramesIndex]
 
     ### rest 1 min or continue on keypress
