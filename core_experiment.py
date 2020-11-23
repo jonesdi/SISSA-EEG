@@ -19,27 +19,29 @@ from utils import draw, format_instr, print_instr, create_run_splits
 # Setting the parallel port for EEG triggers
 
 port_number = 888
-outputPort = parallel.ParallelPort(port_number)
-outputPort.setData(0)
+#outputPort = parallel.ParallelPort(port_number)
+#outputPort.setData(0)
 
 ### subject, actual runs to be ran (out of 32), refresh rate of the screen
 gui = psychopy.gui.Dlg()
 gui.addField("Subject ID:")
-gui.addField("Number of runs to be run (default is 32)")
+#gui.addField("Number of runs to be run (default is 32)")
 gui.addField('Refresh rate')
 gui.show()
 
 subjectId = int(gui.data[0])
-actual_runs = int(gui.data[1])  
-refresh = int(gui.data[2])
+#actual_runs = int(gui.data[1])
+actual_runs=32
+refresh = int(gui.data[1])
 
-keysMapping = [{'k' : 'object', 'd' : 'animal'}, {'d' : 'object', 'k' :  'animal'}] 
+keysMapping = [{'d' : 'animal', 'k' : 'object'}, {'d' : 'object', 'k' :  'animal'}]
+EngToIta = {'animal' : 'Animale', 'object' : 'Oggetto inanimato'}
 timeStamp = core.getAbsTime()
 
 ### Setting and creating the output folder
 
 timeNow = time.strftime('%d_%b_%Hh%M', time.gmtime())
-outputIdentifier = '{}_refresh_rate_{}'.format(timeNow, gui.data[2])
+outputIdentifier = '{}_refresh_rate_{}'.format(timeNow, refresh)
 subjectPath = os.path.join('results', outputIdentifier, 'sub_{:02}'.format(subjectId))
 os.makedirs(subjectPath, exist_ok=True) 
 
@@ -48,7 +50,7 @@ if refresh == 59:
     staircaseFrames = [2,3] # possible presentation times: 2=32ms, 3=48ms
     staircaseFramesIndex = 0 # default index
 else:
-    staircaseFrames = [3,4,5,6,7] # possible presentation times: 4=28ms, 5=35ms, 6=42ms, 7=49ms
+    staircaseFrames = [3,4,5,6,7] # possible presentation times: 3=21ms, 4=28ms, 5=35ms, 6=42ms, 7=49ms
     staircaseFramesIndex = 1 # default index
     
 presentationFrames = staircaseFrames[staircaseFramesIndex]
@@ -69,9 +71,10 @@ final_runs = create_run_splits(runs)
 ### TO DO: adapting screen size to whatever size so as to avoid crashes/bugs
 win = visual.Window(size=[1920,1080], fullscr=False, color=[-1,-1,-1], units='pix')
 mask = format_instr(win, text='##########')
+mask.height = 40
 
 ###main instructions
-instrIntro1 = format_instr(win, text='In questo esperimento, vedrai una serie di parole presentate sullo schermo del computer. \n\n Compariranno una alla volta, e per un tempo molto breve. \n\nQualche volta sarà difficile vederle: non preoccuparti, è tutto previsto dall\'esperimento. Ti chiediamo di dirci se la parola che di volta in volta vedrai si riferisce a: \n\n - un animale \n\n - un oggetto inanimato. \n\n\n [Premi la barra spaziatrice per continuare]')
+instrIntro1 = format_instr(win, text='In questo esperimento, vedrai una serie di parole presentate sullo schermo del computer. \n\n Compariranno una alla volta, e per un tempo molto breve. \n\nQualche volta sarà difficile vederle: non preoccuparti, è tutto previsto dall\'esperimento. Dopo che la parola sarà apparsa, passerà qualche momento di vuoto in cui ti chiediamo di pensare al significato della parola stessa. Subito dopo, ti chiederemo di dirci se la parola si riferiva a: \n\n - un animale \n\n - un oggetto inanimato. \n\n\n [Premi la barra spaziatrice per continuare]')
 
 # taking away the color coding
 #instrIntro2 = format_instr(win, text='Cerca di rispondere il più velocemente possibile, usando il tasto D (rosso) per gli animali e il tasto K (verde) per gli oggetti inanimati. \n Talvolta i tasti corrispondenti cambieranno, verrai informato prima di ogni sezione dell\'esperimento. \n \n [Premi la barra spaziatrice per continuare]')
@@ -79,8 +82,8 @@ instrIntro2 = format_instr(win, text='Cerca di rispondere il più velocemente po
 instrIntro3 = format_instr(win, text='Dopo che avrai premuto il tasto, ti chiederemo anche quanto sicura/o sei della tua risposta. \n\nCome dicevamo, la parola potrebbe essere difficile da vedere in qualche occasione, per cui a volte sarai più sicura/o della tua risposta, a volte meno. \n\nVedrai la domanda sullo schermo. Per indicare quanto sei sicuro/a, potrai usare i tasti:\n\n - 1 (per niente sicura/o)\n\n- 2 (abbastanza sicura/o)\n\n - 3 (molto sicura/o). \n\n\n [Premi la barra spaziatrice per continuare]')
 instrIntro4 = format_instr(win, text='È importante che cerchi di rispondere alla domanda animale/oggetto inanimato anche quando ti sembrerà di non aver letto la parola per nulla. \n\nIn quei casi, fidati del tuo intuito, anche se sarai poco sicura/o della tua risposta. \n\n\n [Premi la barra spaziatrice per fare una prova]')
 #instrReminder = format_instr(win, text='I tasti per questa sessione sono: \n\n - D per gli animali \n\n - K per gli oggetti inanimati \n\n\n [Premi la barra spaziatrice]')
-instrRandomMapping = lambda animalKey, objectKey : 'I tasti per questa sessione sono: \n\n - {} per gli animali \n\n - {} per gli oggetti inanimati \n\n\n [Premi la barra spaziatrice]'.format(objectKey.upper(), animalKey.upper())
-questionStimulus = lambda animalKey, objectKey : 'animale ({})\n\noppure\n\noggetto inanimato ({})?\n'.format(objectKey.upper(), animalKey.upper())
+instrRandomMapping = lambda dKey, kKey : 'I tasti per questa sessione sono: \n\n - D per {} \t\t\t - K per {} \n\n\n [Premi la barra spaziatrice]'.format(dKey.upper(), kKey.upper())
+questionStimulus = lambda dKey, kKey : '{} (D)\t\toppure\t\t{} (K)?\n'.format(dKey.upper(), kKey.upper())
 instrGoOn = format_instr(win, text='[Premi la barra spaziatrice per procedere con la prossima parola] \n')
 question = format_instr(win, text='Dicci per favore quanto sei sicura/o della tua risposta, premendo: \n\n - 1 (per niente sicura/o)\n\n- 2 (abbastanza sicura/o)\n\n - 3 (molto sicura/o)')
 AfterRest = format_instr(win, text='Procediamo! \n\n\n [Premi la barra spaziatrice]')
@@ -88,7 +91,7 @@ Finished = format_instr(win, text='Questa era l\'ultima sessione, e l\'esperimen
 StartExample = format_instr(win, text='Cominciamo con qualche parola di prova! \n\n\n [Premi la barra spaziatrice]')
 
 
-instrMain = format_instr(win, text='Ora procediamo con l\'esperimento vero e proprio! \n\nSe hai delle domande, ora è il momento di farle. \n\n\n [Altrimenti, premi la barra spaziatrice]')
+instrMain = format_instr(win, text='Ora procediamo con l\'esperimento vero e proprio! Da ora in avanti, non riceverai più alcuna valutazione corretto/sbagliato sulle tue scelte. \n\nSe hai delle domande, ora è il momento di farle. \n\n\n [Altrimenti, premi la barra spaziatrice]')
 
 ############################
 #### Show instructions #####
@@ -103,7 +106,8 @@ print_instr(win, instrIntro4,0.5)
 ### Show example instructions
 print_instr(win, StartExample, 0.5)
 trialKeysMapping = keysMapping[0]
-randomMapping = format_instr(win, instrRandomMapping([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+instrMessage = instrRandomMapping(EngToIta[[v for k, v in trialKeysMapping.items()][0]], EngToIta[[v for k, v in trialKeysMapping.items()][1]])
+randomMapping = format_instr(win, instrMessage)
 #print_instr(win, instrReminder, 1)
 print_instr(win, randomMapping, 1)
 
@@ -121,7 +125,7 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     exampleStimulus = format_instr(win, text=exampleWord)
 
     draw(win, mask,int(refresh/2))
-    draw(win, exampleStimulus ,int(presentationFrames), relevant_stimulus=True)
+    draw(win, exampleStimulus ,int(presentationFrames))
     draw(win, mask,int(refresh))
 
     ### Waiting for an answer and then collecting it
@@ -130,7 +134,8 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
     while responseNotGiven:
             
         #draw(win, mask,int(refresh*2))
-        questionRandom = format_instr(win, questionStimulus([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+        questionMessage = questionStimulus(EngToIta[[v for k, v in trialKeysMapping.items()][0]], EngToIta[[v for k, v in trialKeysMapping.items()][1]])
+        questionRandom = format_instr(win, questionMessage)
         questionRandom.draw(win=win)
         #questionStimulus.draw(win=win)
         win.flip()
@@ -141,17 +146,17 @@ for exampleNum, exampleIndex in enumerate(randomIndices):
 
     win.flip()
 
+    #ask how sure you are
+    question.draw(win=win)
+    win.flip()
+    responseSureTemp = event.waitKeys(keyList=['1','2','3'])
+
     ### feedback
     outcome = 'Corretto' if trialKeysMapping[responseKey] == Stimuli['category'][exampleIndex] else 'Sbagliato'
     outcomeExample = lambda outcome, word: '{}!\n\nLa parola era \'{}\''.format(outcome, word)
     format_instr(win, text=outcomeExample(outcome, exampleWord)).draw(win=win)
     win.flip()
     core.wait(1)
-
-    #ask how sure you are
-    question.draw(win=win)
-    win.flip()
-    responseSureTemp = event.waitKeys(keyList=['1','2','3'])
 
     ### press space to go to next trial
     if exampleNum<3:
@@ -173,13 +178,15 @@ for runNum in range(1, actual_runs+1):
     staircaseCounter = {'correct' : 0, 'wrong' : 0}
     
     runResults = collections.defaultdict(list)
-    randomMapping = format_instr(win, instrRandomMapping([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+    instrMessage = instrRandomMapping(EngToIta[[v for k, v in trialKeysMapping.items()][0]], EngToIta[[v for k, v in trialKeysMapping.items()][1]])
+    randomMapping = format_instr(win, instrMessage)
     print_instr(win, randomMapping, 1)
 
     ### start trials
     for trialIndex, trialStimulus in enumerate(final_runs[runNum]):
 
         trialWord = Stimuli['word'][trialStimulus]
+
         '''
         ### correcting the word case if needed
         if trialStimulus in wordCaseRandomizer:
@@ -188,13 +195,12 @@ for runNum in range(1, actual_runs+1):
         word = format_instr(win, text=trialWord)
         
         draw(win, mask,int(refresh/2))
-        outputPort.setData(int(trialStimulus)) # Sending the EEG trigger, opening the parallel port with the trialNum number
+        #outputPort.setData(int(trialStimulus)) # Sending the EEG trigger, opening the parallel port with the trialNum number
         #draw(win, word,int(refresh/presentationFrames))
         clock = core.Clock() # starts measuring stimulus presentation time
         draw(win, word,int(presentationFrames))
         stimulusDuration = clock.getTime() # stores stimulus presentation duration
-        outputPort.setData(0) # Closing the parallel port
-        clock = core.Clock()
+        #outputPort.setData(0) # Closing the parallel port
         #win.flip()
         draw(win, mask,int(refresh))
 
@@ -203,9 +209,11 @@ for runNum in range(1, actual_runs+1):
         responseNotGiven = True
         while responseNotGiven:
             
-            questionRandom = format_instr(win, questionStimulus([k for k in trialKeysMapping.keys()][0], [k for k in trialKeysMapping.keys()][1]))
+            questionMessage = questionStimulus(EngToIta[[v for k, v in trialKeysMapping.items()][0]], EngToIta[[v for k, v in trialKeysMapping.items()][1]])
+            questionRandom = format_instr(win, questionMessage)
             questionRandom.draw(win=win)
             win.flip()
+            clock = core.Clock()
             responses = event.waitKeys(keyList=['d','k'], timeStamped=clock)
             responseKey, responseTime = responses[0][0], responses[0][1]
             responseNotGiven = False
@@ -237,12 +245,14 @@ for runNum in range(1, actual_runs+1):
     runDataFrame = pd.DataFrame([[k] + v for k, v in runResults.items()], columns=['Trial number', 'Word', 'Group','Trigger code', 'Prediction outcome', 'Response time', 'Certainty', 'Stimulus duration (ms)']) # turning the dictionary into a pandas data frame
     runDataFrame.to_csv(os.path.join(subjectPath, 'run_{:02}_events_log.csv'.format(runNum)), index=False) # exporting to file the pandas data frame
 
+    '''
     ### Staircase stimulus duration correction
     if staircaseCounter['wrong'] > 16:
         staircaseFramesIndex = min([staircaseFramesIndex+1, len(staircaseFrames)-1])   
     elif staircaseCounter['correct'] > 16:
         staircaseFramesIndex = max([staircaseFramesIndex-1, 0])   
     presentationFrames = staircaseFrames[staircaseFramesIndex]
+    '''
 
     ### rest 1 min or continue on keypress
     if runNum<actual_runs:

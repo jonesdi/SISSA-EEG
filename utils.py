@@ -5,7 +5,8 @@ import random
 from psychopy import visual, event, core
 
 def format_instr(win, text):
-    output = visual.TextStim(win, text, color=[.8,.8,.8], pos=[0,0], ori=0, wrapWidth=700)
+    output = visual.TextStim(win, text, color=[.8,.8,.8], pos=[0,0], ori=0, wrapWidth=1080)
+    output.height = 30
     return output
 
 def print_instr(win, instr_type, wait):
