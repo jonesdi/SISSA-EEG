@@ -21,8 +21,8 @@ from utils import draw, format_instr, print_instr, create_run_splits
 # Setting the parallel port for EEG triggers
 
 port_number = 888
-outputPort = parallel.ParallelPort(port_number)
-outputPort.setData(0)
+#outputPort = parallel.ParallelPort(port_number)
+#outputPort.setData(0)
 
 ### subject, actual runs to be ran (out of 32), refresh rate of the screen
 gui = psychopy.gui.Dlg()
@@ -79,6 +79,7 @@ runs = 32
 final_runs = create_run_splits(runs)
 with open(os.path.join(subjectPath, 'runs_split.pkl'), 'wb') as runsPickle:
     pickle.dump(final_runs, runsPickle)
+print(final_runs.keys())
 
 #with open(os.path.join('results/30_Nov_13h46_refresh_rate_144/sub_01/runs_split.pkl'), 'rb') as input_file:
     #final_runs = pickle.load(input_file)
@@ -226,14 +227,14 @@ for runNum in (range(1, 33)):  # 32 runs
         while clock.getTime()< 0.5:
             textStimulus.text = mask
             win.flip()
-        outputPort.setData(int(trialStimulus)+1) # Sending the EEG trigger, opening the parallel port with the trialNum number
+        #outputPort.setData(int(trialStimulus)+1) # Sending the EEG trigger, opening the parallel port with the trialNum number
         clock = core.Clock()
         #while clock.getTime()< 0.02:
         for i in range(4):
             textStimulus.text = trialWord
             win.flip()
         stimulusDuration = clock.getTime() # stores stimulus presentation duration
-        outputPort.setData(0) # Closing the parallel port
+        #outputPort.setData(0) # Closing the parallel port
         clock = core.Clock()
         while clock.getTime()< 1.5:
             textStimulus.text = mask

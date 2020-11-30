@@ -63,7 +63,7 @@ def create_run_splits(runs=32): # creates a dictionary for either 16 or 32 runs
     object_fillers = randomize_splits([k for k in range(40, 50)], runs)
 
     final_runs = collections.defaultdict(list)
-    for k in range(runs):
+    for k in range(1, runs+1):
         final_runs[k] += animal_targets[k]
         final_runs[k] += object_targets[k]
         final_runs[k] += animal_fillers[k]
