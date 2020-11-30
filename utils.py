@@ -26,7 +26,7 @@ def randomize_splits(indices, runs): # creates a dictionary for either 16 or 32 
     runs_dict = collections.defaultdict(list)
     counter  = {k : 0 for k in indices}
 
-    for run in range(runs):
+    for run in range(1, runs+1):
 
         stimuli_indices = [n for n in numpy.random.choice([k for k in counter.keys()], size=10, replace=False)] # randomizes the indices
         run_counter = 0
