@@ -16,8 +16,9 @@ with open('stimuli_final.csv', 'r') as f:
     for index, l in enumerate(f):
         if index != 0:
             l = str(l).strip().split(';')
-            if l[2] == 'target':
-                words.append(l[0])
+            #if l[2] == 'target':
+                #words.append(l[0])
+            words.append(l[0])
 
 word_combs = [k for k in itertools.combinations(words, r=2)]
 
