@@ -12,6 +12,7 @@ import matplotlib.pyplot as plt
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--targets_only', action='store_true', default=False, help='Indicates whether to only use target words or all words')
+parser.add_argument('--accuracy_analysis', action='store_true', default=True, help='Decides whether to do basic level analyses or higher level analyses')
 args = parser.parse_args()
 
 event_mapper = {1 : 'low', 2 : 'medium', 3 : 'high'}
@@ -54,6 +55,8 @@ for s in range(3, 12):
 
             if e[1] == 'target' and e[3] == 'correct':
                 events_selector[event_mapper[int(e[4])]].append(event_index)
+        elif args.accuracy_analysis:
+            events_selector[e[3]].append(event_index)
         else:
             if e[3] == 'correct':
                 events_selector[event_mapper[int(e[4])]].append(event_index)
