@@ -2,6 +2,9 @@ import os
 import gensim
 import scipy
 import itertools
+import tqdm
+
+from tqdm import tqdm
 
 ### Housekeeping
 
@@ -22,7 +25,7 @@ with open('stimuli_final.csv', 'r') as f:
 
 word_combs = [k for k in itertools.combinations(words, r=2)]
 
-for i in [50000, 100000, 150000]:
+for i in [100000, 150000]:
     with open(os.path.join(output_folder, 'sims_w2v_vocab_{}'.format(i)), 'w') as o:
         w2v = gensim.models.Word2Vec.load('../../dataset/corpora/itwac/w2v_vocab_{}/w2v_itwac_vocab_{}'.format(i, i))
         for word_one, word_two in word_combs:
