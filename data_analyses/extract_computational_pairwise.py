@@ -15,7 +15,7 @@ os.makedirs(output_folder, exist_ok=True)
 
 words = []
 
-with open('stimuli_final.csv', 'r') as f:
+with open('../lab_experiment/stimuli_final.csv', 'r') as f:
     for index, l in enumerate(f):
         if index != 0:
             l = str(l).strip().split(';')
