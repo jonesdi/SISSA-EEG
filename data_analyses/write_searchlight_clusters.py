@@ -1,12 +1,16 @@
+import argparse
 import mne
 import collections
 import numpy
 
-def get_searchlight_groups():
+### Finds and writes to file for each searchlight cluster 1. the number 2. the center 3+ the neighbouring ones at a max distance of 20mm
+
+def get_searchlight_groups(max_distance=0.02):
 
     montage = mne.channels.make_standard_montage('biosemi128', head_size=0.088)
     positions = montage.get_positions()['ch_pos']
-    ### Rescaling so that the minimum value is 0
+
+    ### Rescaling so that the minimum coordinate value is 0
     scaler = list()
     for i in range(3):
         scaler.append(abs(min([v[i] for k, v in positions.items()])))
@@ -15,7 +19,7 @@ def get_searchlight_groups():
     ### Now obtaining the searchlight group with tolerance 20mm
     searchlight_groups = collections.defaultdict(list)
     for channel, position in positions.items():
-        neighbour_tolerance = [(k-0.02, k+0.02) for k in position]
+        neighbour_tolerance = [(k-max_distance, k+max_distance) for k in position]
         for other_channel, other_position in positions.items():
             if other_channel != channel:
                 marker = [False, False, False]
@@ -26,3 +30,19 @@ def get_searchlight_groups():
                     searchlight_groups[channel].append(other_channel)
 
     return searchlight_groups
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--max_distance', default=0.02, help='Max distance between an electrode and its neighbours')
+args = parser.parse_args()
+
+searchlight_groups = get_searchlight_groups(args.max_distance)
+
+with open('searchlight_clusters_{}mm.txt'.format(int(args.max_distance*1000)), 'w') as o:
+    o.write('Cluster index\tCenter\tNeighbors\n')
+    c = 1
+    for channel, other_channels_list in searchlight_groups.items():
+        o.write('{}\t{}\t'.format(c, channel))
+        for other_channel in other_channels_list:
+            o.write('{}\t'.format(other_channel))
+        o.write('\n')
+        c += 1

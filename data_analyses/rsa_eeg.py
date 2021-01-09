@@ -10,75 +10,22 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
+from io_utils import ComputationalModels, EvokedResponses
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--targets_only', action='store_true', default=False, help='Indicates whether to only use target words or all words')
 parser.add_argument('--accuracy_analysis', action='store_true', default=True, help='Decides whether to do basic level analyses or higher level analyses')
+parser.add_argument('--permutation', action='store_true', default=False, help='Indicates whether to run a permutation analysis or not')
 args = parser.parse_args()
 
 event_mapper = {1 : 'low', 2 : 'medium', 3 : 'high'}
+computational_models = ComputationalModels()
 
-computational_models = collections.defaultdict(dict)
+### RSA
 
-for i in [100000]:
-    w2v_similarities = collections.defaultdict(float)
-    with open(os.path.join('computational_models', 'sims_w2v_vocab_{}'.format(i)), 'r') as w2v_file:
-        for l in (w2v_file):
-            l = l.strip().split('\t')
-            w2v_similarities[(l[0], l[1])] = float(l[3])
-    computational_models['Word2Vec'] = w2v_similarities
+for s in range(3, 17): 
 
-cooc_original_similarities = collections.defaultdict(float)
-with open('cooc_original.csv') as cooc_original_file:
-    for i, l in enumerate(cooc_original_file):
-        if i > 0: 
-            l = l.strip().split(';')
-            cooc_original_similarities[(l[0], l[1])] = float(l[2])
-    computational_models['Raw co-occurrences'] = cooc_original_similarities
-
-for s in range(3, 12):
-    
-    events = list()
-    events_selector = collections.defaultdict(list)
-
-    folder = '/mnt/c/Users/andre/OneDrive - Queen Mary, University of London/conscious_unconscious_processing/sub-{:02}'.format(s)
-    epochs = mne.read_epochs(os.path.join(folder, 'sub-{:02}_highpass-100Hz-epoched-concatenated.fif'.format(s)))
-    with open(os.path.join(folder, 'sub-{:02}_events_rejected_or_good.txt'.format(s))) as f:
-        for l in f:
-            l = l.strip().split('\t')
-            if l[5] != 'rejected':
-                events.append(l)
-
-    assert len(events) == len(epochs)
-
-    for event_index, e in enumerate(events):
-        if args.targets_only:
-
-            if e[1] == 'target' and e[3] == 'correct':
-                events_selector[event_mapper[int(e[4])]].append(event_index)
-        elif args.accuracy_analysis:
-            events_selector[e[3]].append(event_index)
-        else:
-            if e[3] == 'correct':
-                events_selector[event_mapper[int(e[4])]].append(event_index)
-
-    epochs = epochs.get_data()
-
-    sampling_points = epochs.shape[-1]
-    time_step = (sampling_points/204.8)/sampling_points
-    time_points = collections.defaultdict(float)
-
-    for i in range(sampling_points):
-        if i == 0:
-            time_points[i] = -0.2
-        else:
-            current_time = time_points[i-1] + time_step
-            if current_time <= 1.:
-                time_points[i] = current_time
-            else:
-                break
-
-    feature_standardizer = mne.decoding.Scaler(scalings='mean')
-    epochs = feature_standardizer.fit_transform(epochs)
+    evoked_responses = EvokedResponses(3)
 
     subject_results = collections.defaultdict(list)
 
@@ -121,36 +68,3 @@ for s in range(3, 12):
             subject_results[certainty_level].append(correlation_with_computational)
         subject_results[certainty_level].append('n_words={}'.format(len(current_evoked_eeg.keys())))
 
-    print('\nNow plotting the results...')
-        
-    for certainty, results in subject_results.items():
-    
-        fig, ax = plt.subplots(constrained_layout=True)
-        ax.set_ymargin(0.5)
-        ax.set_xmargin(0.1)
-
-        all_results = results[:-1]
-        results_one = [k[0][1] for k in all_results]
-        results_two = [k[1][1] for k in all_results]
-        label_one = all_results[0][0][0]
-        label_two = all_results[0][1][0]
-
-        number_words = results[-1]
-
-        ax.plot([v for k, v in time_points.items()], results_one, label=label_one)
-        ax.plot([v for k, v in time_points.items()], results_two, label=label_two)
-
-        ax.legend(ncol=3, loc=9, bbox_to_anchor=(0.5, 1.125))
-        ax.set_ylabel('Correlation')
-        ax.set_xlabel('Time')
-        ax.set_title('Correlation with Word2Vec at each time point for subject {}\n{} certainty - {} words considered'.format(s, certainty.capitalize(), number_words), pad=40)
-
-        if args.targets_only:
-            word_selection = 'targets_only'
-        else:
-            word_selection = 'all_words'
-        output_path = os.path.join('rsa_results', word_selection, certainty)
-        os.makedirs(output_path, exist_ok=True)
-        plt.savefig(os.path.join(output_path, 'rsa_sub_{:02}_{}.png'.format(s, certainty)))
-        plt.clf()
-        plt.close()
