@@ -1,4 +1,9 @@
 
+import matplotlib
+matplotlib.use('Agg')
+
+import matplotlib.pyplot as plt
+
     print('\nNow plotting the results...')
         
     for certainty, results in subject_results.items():

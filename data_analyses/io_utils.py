@@ -68,14 +68,14 @@ class EvokedResponses:
     def read_events(self):
 
         events_dict = collections.defaultdict(list)
+        certainty_mapper = {1 : 'low', 2 : 'medium', 3 : 'high'}
 
         with open(os.path.join(self.folder, 'sub-{:02}_events_rejected_or_good.txt'.format(self.subject_number))) as f:
             event_index = 0
             for l in f:
                 l = l.strip().split('\t')
                 if l[5] != 'rejected':
-
-                    events_dict[event_index] = [l[0], l[1], l[3], l[4]]
+                    events_dict[event_index] = [l[0], l[1], l[3], certainty_mapper[int(l[4])]]
                     event_index += 1
 
         return events_dict
@@ -121,7 +121,7 @@ class SearchlightClusters:
             for l in searchlight_file:
                 if 'CE' not in l:
                     l = l.strip().split('\t')
-                    index_to_code[l[1]] = l[0]
+                    index_to_code[int(l[1])] = l[0]
 
         return index_to_code
 
@@ -132,7 +132,7 @@ class SearchlightClusters:
         with open('searchlight_clusters_{}mm.txt'.format(self.max_distance), 'r') as searchlight_file:
             for l in searchlight_file:
                 if 'CE' not in l:
-                    l = l.strip().split('\t')
-                    searchlight_clusters[l[1]] = l[2:]
+                    l = [int(i) for i in l.strip().split('\t')[1:]]
+                    searchlight_clusters[l[1]] = [l[1]] + l[2:]
 
         return searchlight_clusters
