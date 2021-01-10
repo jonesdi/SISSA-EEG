@@ -9,6 +9,7 @@ def get_searchlight_groups(max_distance=0.02):
 
     montage = mne.channels.make_standard_montage('biosemi128', head_size=0.088)
     positions = montage.get_positions()['ch_pos']
+    position_indices = {electrode : electrode_index for electrode_index, electrode in enumerate(positions.keys())}
 
     ### Rescaling so that the minimum coordinate value is 0
     scaler = list()
@@ -27,7 +28,7 @@ def get_searchlight_groups(max_distance=0.02):
                     if other_position[axis_index] >= window[0] and other_position[axis_index] <= window[1]:
                         marker[axis_index] = True
                 if False not in marker:
-                    searchlight_groups[channel].append(other_channel)
+                    searchlight_groups[(channel, position_indices[channel])].append(position_indices[other_channel])
 
     return searchlight_groups
 
@@ -38,11 +39,9 @@ args = parser.parse_args()
 searchlight_groups = get_searchlight_groups(args.max_distance)
 
 with open('searchlight_clusters_{}mm.txt'.format(int(args.max_distance*1000)), 'w') as o:
-    o.write('Cluster index\tCenter\tNeighbors\n')
-    c = 1
-    for channel, other_channels_list in searchlight_groups.items():
-        o.write('{}\t{}\t'.format(c, channel))
-        for other_channel in other_channels_list:
-            o.write('{}\t'.format(other_channel))
+    o.write('Central electrode (CE) code\tCE index\tNeighbors\n')
+    for channel_info, other_channels_list in searchlight_groups.items():
+        o.write('{}\t{}\t'.format(channel_info[0], channel_info[1]))
+        for other_channel_index in other_channels_list:
+            o.write('{}\t'.format(other_channel_index))
         o.write('\n')
-        c += 1
