@@ -100,7 +100,7 @@ class EvokedResponses:
                 time_points[i] = -0.2
             else:
                 current_time = time_points[i-1] + time_step
-                if current_time <= 1.:
+                if current_time <= 1.1:
                     time_points[i] = current_time
                 else:
                     break
@@ -133,6 +133,6 @@ class SearchlightClusters:
             for l in searchlight_file:
                 if 'CE' not in l:
                     l = [int(i) for i in l.strip().split('\t')[1:]]
-                    searchlight_clusters[l[1]] = [l[1]] + l[2:]
+                    searchlight_clusters[l[0]] = l
 
         return searchlight_clusters

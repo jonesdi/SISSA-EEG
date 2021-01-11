@@ -9,6 +9,7 @@ import argparse
 from tqdm import tqdm
 
 from io_utils import ComputationalModels, EvokedResponses, SearchlightClusters
+from plot_utils import basic_line_plot_searchlight_electrodes
 
 def restrict_evoked_responses(args, evoked_responses):
 
@@ -45,6 +46,7 @@ def restrict_evoked_responses(args, evoked_responses):
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--permutation', action='store_true', default=False, help='Indicates whether to run a permutation analysis or not')
+parser.add_argument('--searchlight', action='store_true', default=True, help='Indicates whether to run a searchlight analysis or not')
 parser.add_argument('--analysis', default='objective_accuracy', choices=['objective_accuracy', 'subjective_judgments'], help='Indicates which pairwise similarities to compare, whether by considering objective accuracy or subjective judgments')
 parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'target_only'], help='Indicates whether to use for the analyses only the targets or all the words')
 parser.add_argument('--computational_models', default='w2v', choices=['w2v', 'original_cooc'], help='Indicates which similarities to use for comparison to the eeg similarities')
@@ -55,7 +57,7 @@ if args.computational_models == 'w2v':
 searchlight_clusters = SearchlightClusters()
 
 base_folder = os.path.join('rsa_maps', 'rsa_{}_{}'.format(args.analysis, args.word_selection, args.computational_models))
-os.makedirs(os.path.join(base_folder))
+os.makedirs(os.path.join(base_folder), exist_ok=True)
 
 hop = 2
 temporal_window_size = 4
@@ -85,6 +87,8 @@ for s in range(3, 17):
 
         present_words = [k for k in evoked_dict.keys()]
 
+        time_points = [t for t in range(0, len(evoked_responses.time_points), 2)] if args.searchlight else [k for k in evoked_responses.time_points.keys()]
+
         subject_info[condition]['words used'] = present_words
 
         word_combs = [k for k in itertools.combinations(present_words, r=2)]
@@ -97,11 +101,12 @@ for s in range(3, 17):
 
         current_condition_rho = collections.defaultdict(list)
 
+
         for center in tqdm(range(128)):
 
             relevant_electrode_indices = searchlight_clusters.neighbors[center]
 
-            for t in range(0, len(evoked_responses.time_points), 2):
+            for t in time_points:
 
                 eeg_similarities = list()
 
@@ -118,29 +123,34 @@ for s in range(3, 17):
                             eeg_one.append(evoked_dicts[word_one][relevant_electrode, relevant_time])
                             eeg_two.append(evoked_dicts[word_two][relevant_electrode, relevant_time])
 
-                    eeg_similarities.append(scipy.stats.spearmanr(eeg_one, eeg_two)[0])
+                    word_comb_score = scipy.stats.spearmanr(eeg_one, eeg_two)[0]
+                    eeg_similarities.append(word_comb_score)
 
                 rho_score = scipy.stats.spearmanr(eeg_similarities, computational_scores)[0]
                 current_condition_rho[center].append(rho_score)
 
         subject_results[condition] = current_condition_rho
 
+
     ### Writing to file
-    for s, condition_dict in subject_results.items():
+    for condition, condition_dict in subject_results.items():
         subject_folder = os.path.join(base_folder, 'sub-{:02}'.format(s))
         os.makedirs(subject_folder, exist_ok=True)
-        for condition, clusters_dict in condition_dict.items():
 
-            ### Writing the Spearman rho maps
-            with open(os.path.join(subject_folder, '{}.map'.format(condition)), 'w') as o:
-                o.write('Searchlight cluster index\tSpearman Rho per time window\n')
-                for cluster_index, rho_map in clusters_dict.items():
-                    o.write('{}\t'.format(cluster_index))
-                    for rho in rho_map:
-                        o.write('{}\t'.format(rho))
-                    o.write('\n')
+        ### Writing the Spearman rho maps
+        with open(os.path.join(subject_folder, '{}.map'.format(condition)), 'w') as o:
+            o.write('Searchlight cluster index\tSpearman Rho per time window\n')
+            for cluster_index, rho_map in condition_dict.items():
+                o.write('{}\t'.format(cluster_index))
+                for rho in rho_map:
+                    o.write('{}\t'.format(rho))
+                o.write('\n')
 
-        ### Writing the words actually used
-        with open(os.path.join(subject_folder, 'words_used_info.txt'), 'w') as o:
-            for condition, words_used in subject_info.items():
-                o.write('Condition:\t{}\nNumber of words used:\t{}\n\n'.format(condition, len(words_used)))
+        ### Plotting the basic plot for each condition
+        basic_line_plot_searchlight_electrodes([evoked_responses.time_points[k] for k in time_points], condition_dict, condition, args.computational_models, subject_folder)
+
+    ### Writing the words actually used
+    with open(os.path.join(subject_folder, 'words_used_info.txt'), 'w') as o:
+        for condition, condition_info in subject_info.items():
+            words_used = condition_info['words used']
+            o.write('Condition:\t{}\nNumber of words used:\t{}\n\n'.format(condition, len(words_used)))
