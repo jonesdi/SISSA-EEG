@@ -4,7 +4,7 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
-def basic_line_plot_searchlight_electrodes(time_points, y_dict, condition, model_name, output_path):
+def basic_line_plot_searchlight_electrodes(time_points, y_dict, condition, model_name, number_of_words, output_path):
     
     fig, ax = plt.subplots(constrained_layout=True)
     ax.set_ymargin(0.5)
@@ -28,7 +28,8 @@ def basic_line_plot_searchlight_electrodes(time_points, y_dict, condition, model
     ax.set_ylabel('Correlation')
     ax.set_xlabel('Time')
     #ax.set_title('Correlation with {} at each time point\n{} certainty - {} words considered'.format(s, certainty.capitalize(), number_words), pad=40)
-    ax.set_title('Correlation with {} at each time point'.format(model_name), pad=40)
+    ax.set_title('Correlation with {} at each time point\nWords used: {}'.format(model_name, len(number_of_words)), pad=20)
+    ax.hlines(y=0.0, xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
 
     #if args.targets_only:
         #word_selection = 'targets_only'
@@ -37,7 +38,6 @@ def basic_line_plot_searchlight_electrodes(time_points, y_dict, condition, model
     #output_path = os.path.join('rsa_results', word_selection, certainty)
     #os.makedirs(output_path, exist_ok=True)
     #plt.savefig(os.path.join(output_path, 'rsa_sub_{:02}_{}.png'.format(s, certainty)))
-    import pdb; pdb.set_trace()
     plt.savefig(os.path.join(output_path, '{}.png'.format(condition)))
     plt.clf()
     plt.close()

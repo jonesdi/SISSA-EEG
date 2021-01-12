@@ -59,7 +59,7 @@ class EvokedResponses:
 
     def __init__(self, subject_number):
 
-        self.folder = '/mnt/c/Users/andre/OneDrive - Queen Mary, University of London/conscious_unconscious_processing/preprocessed_files/sub-{:02}'.format(subject_number)
+        self.folder = '/import/cogsci/andrea/dataset/neuroscience/conscious_unconscious_processing/preprocessed_files/sub-{:02}'.format(subject_number)
         self.subject_number = subject_number
         self.events = self.read_events()
         self.original_epochs = self.read_original_epochs()

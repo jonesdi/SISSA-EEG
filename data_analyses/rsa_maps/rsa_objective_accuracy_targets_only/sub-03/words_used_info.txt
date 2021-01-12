@@ -1,6 +1,0 @@
-Condition:	wrong
-Number of words used:	40
-
-Condition:	correct
-Number of words used:	40
-
