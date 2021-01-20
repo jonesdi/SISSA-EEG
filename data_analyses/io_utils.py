@@ -106,33 +106,3 @@ class EvokedResponses:
                     break
         return time_points
 
-class SearchlightClusters:
-
-    def __init__(self, max_distance=20):
-
-        self.max_distance = max_distance
-        self.index_to_code = self.indices_to_codes()
-        self.neighbors = self.read_searchlight_clusters()
-
-    def indices_to_codes(self):
-
-        index_to_code = collections.defaultdict(str)
-        with open('searchlight_clusters_{}mm.txt'.format(self.max_distance), 'r') as searchlight_file:
-            for l in searchlight_file:
-                if 'CE' not in l:
-                    l = l.strip().split('\t')
-                    index_to_code[int(l[1])] = l[0]
-
-        return index_to_code
-
-    def read_searchlight_clusters(self):
-
-        searchlight_clusters = collections.defaultdict(list)
-
-        with open('searchlight_clusters_{}mm.txt'.format(self.max_distance), 'r') as searchlight_file:
-            for l in searchlight_file:
-                if 'CE' not in l:
-                    l = [int(i) for i in l.strip().split('\t')[1:]]
-                    searchlight_clusters[l[0]] = l
-
-        return searchlight_clusters
