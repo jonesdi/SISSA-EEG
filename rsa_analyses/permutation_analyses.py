@@ -2,6 +2,7 @@ import argparse
 import os
 import collections
 import numpy
+import re
 from scipy import stats
 
 from searchlight import SearchlightClusters
@@ -9,6 +10,7 @@ from io_utils import EvokedResponses
 from plot_utils import basic_line_plot_all_electrodes_subject_p_values, basic_scatter_plot_all_electrodes_subject_p_values, \
                        line_and_scatter_plot_all_electrodes_subject_p_values, subject_electrodes_scatter_plot, \
                        confusion_matrix 
+from rsa_utils import prepare_folder
 
 from tqdm import tqdm
 
@@ -33,14 +35,14 @@ if args.searchlight:
 
 for s in tqdm(range(3, 17)):
     ### Collecting the true results
-    true_data_folder = os.path.join('rsa_maps', 'rsa_searchlight_{}_{}_{}_{}_permutation_False'.format(True if args.searchlight else False, args.analysis, args.word_selection, args.computational_model), 'sub-{:02}'.format(s))
 
     results = collections.defaultdict(lambda : collections.defaultdict(lambda: collections.defaultdict(list)))
     counts = collections.defaultdict(int)
 
     for condition in conditions:
+        base_folder = prepare_folder(args, s)
         try:
-            with open(os.path.join(true_data_folder, '{}.map'.format(condition)), 'r') as input_file:
+            with open(os.path.join(base_folder, '{}.map'.format(condition)), 'r') as input_file:
                 all_electrodes = [l.strip().split('\t')[1:] for l in input_file.readlines()][1:]
             if len(all_electrodes) == 1:
                 results[condition]['all']['true'] = [float(n) for n in all_electrodes[0]]
@@ -51,7 +53,7 @@ for s in tqdm(range(3, 17)):
             conditions = [c for c in conditions if c != condition]
 
         try:
-            with open(os.path.join(true_data_folder, 'words_used_info.txt'), 'r') as input_file:
+            with open(os.path.join(base_folder, 'words_used_info.txt'), 'r') as input_file:
                 word_counts = [l.strip().split('\t')[1] for l in input_file.readlines() if len(l.split('\t'))>1]
             counts[word_counts[0]] = int(word_counts[1])
             counts[word_counts[2]] = int(word_counts[3])
@@ -61,7 +63,8 @@ for s in tqdm(range(3, 17)):
 
     for condition in conditions:
         for perm in range(1, 301):
-            permutation_data_folder = os.path.join('rsa_maps', 'rsa_searchlight_{}_{}_{}_{}_permutation_True'.format(True if args.searchlight else False, args.analysis, args.word_selection, args.computational_model), 'sub-{:02}_{:03}'.format(s, perm))
+
+            permutation_data_folder = prepare_folder(args, s, perm)
             try:
                 with open(os.path.join(permutation_data_folder, '{}.map'.format(condition)), 'r') as input_file:
                     all_electrodes = [l.strip().split('\t')[1:] for l in input_file.readlines()][1:]
@@ -73,7 +76,7 @@ for s in tqdm(range(3, 17)):
             except FileNotFoundError:
                 print(perm)
 
-    plot_path = os.path.join('p-value_plots', 'rsa_searchlight_{}_{}_{}_{}'.format(True if args.searchlight else False, args.analysis, args.word_selection, args.computational_model), 'sub-{:02}'.format(s))
+    plot_path = re.sub('true.+', '', prepare_folder(args, s).replace('rsa_maps', 'permutation_results'))
     os.makedirs(plot_path, exist_ok=True)
     #t_values = collections.defaultdict(lambda: collections.defaultdict(list))
     all_p_values = collections.defaultdict(lambda: collections.defaultdict(list))
@@ -119,8 +122,9 @@ for s in tqdm(range(3, 17)):
                 permutation_rhos.append(rho_scores)
                 p_values.append((readable_time_point, p_value))
 
-            rho_matrix[electrode_name[:1]].append(original_rhos)
-            p_matrix[electrode_name[:1]].append([p[1] for p in p_values])
+            if args.searchlight:
+                rho_matrix[electrode_name[:1]].append(original_rhos)
+                p_matrix[electrode_name[:1]].append([p[1] for p in p_values])
 
 
             line_and_scatter_plot_all_electrodes_subject_p_values(s, plot_time_points, p_values, original_rhos, permutation_rhos, condition, plot_path, electrode_name, counts)
@@ -152,5 +156,5 @@ for s in tqdm(range(3, 17)):
 ### Plotting the across subject average for the non-searchlight condition
 if not args.searchlight:
     final_plot = {k : numpy.nanmean(v, axis=0) for k, v in final_plot.items()}
-    plot_path = os.path.join('p-value_plots', 'rsa_searchlight_{}_{}_{}_{}'.format(True if args.searchlight else False, args.analysis, args.word_selection, args.computational_model))
-    basic_scatter_plot_all_electrodes_subject_p_values('all_subjects', [timepoint_converter[t] for t in time_points], final_plot, 'average_p', plot_path)
+    final_plot_path = re.sub('sub-.+', '', prepare_folder(args, s).replace('rsa_maps', 'permutation_results'))
+    basic_scatter_plot_all_electrodes_subject_p_values('all_subjects', [timepoint_converter[t] for t in time_points], final_plot, 'average_p', final_plot_path)

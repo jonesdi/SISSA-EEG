@@ -80,14 +80,30 @@ def run_all_electrodes_rsa(evoked_dict, word_combs, computational_scores, time_p
 
     return current_condition_rho
 
-def run_rsa(args, s, evoked_responses, computational_model, all_time_points):
+def prepare_folder(args, s, permutation=0):
 
+    brain_approach = 'searchlight' if args.searchlight else 'all_electrodes'
+    analysis = args.analysis
+    words = args.word_selection
+    computational_model = args.computational_model
+    permutation = 'permutation_{:03}'.format(permutation) if permutation != 0 else 'true'
+
+    folder_path = os.path.join('rsa_maps', brain_approach, \
+                                analysis, words, \
+                                computational_model, \
+                                'sub-{:02}'.format(s), permutation)
+
+    os.makedirs(folder_path, exist_ok=True)
+
+    return folder_path
+    
+
+def run_rsa(args, s, evoked_responses, computational_model, all_time_points, permutation=0):
+
+    subject_folder = prepare_folder(args, s, permutation)
     
     ### Selecting evoked responses for the current pairwise similarity computations
     selected_evoked = restrict_evoked_responses(args, evoked_responses)
-
-    base_folder = os.path.join('rsa_maps', 'rsa_searchlight_{}_{}_{}_{}_permutation_{}'.format(True if args.searchlight else False, args.analysis, args.word_selection, args.computational_model, True if args.permutation else False))
-    os.makedirs(os.path.join(base_folder), exist_ok=True)
 
     subject_results = collections.defaultdict(dict)
     subject_info = collections.defaultdict(lambda : collections.defaultdict(list))
@@ -127,11 +143,6 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points):
 
     ### Writing to file
     for condition, condition_dict in subject_results.items():
-        if args.permutation:
-            subject_folder = os.path.join(base_folder, 'sub-{}'.format(s))
-        else:
-            subject_folder = os.path.join(base_folder, 'sub-{:02}'.format(s))
-        os.makedirs(subject_folder, exist_ok=True)
 
         ### Writing the Spearman rho maps
         with open(os.path.join(subject_folder, '{}.map'.format(condition)), 'w') as o:
@@ -145,12 +156,14 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points):
                     o.write('{}\t'.format(rho))
                 o.write('\n')
 
+        '''
         ### Plotting the basic plot for each condition
         basic_line_plot_searchlight_electrodes([all_time_points[k] for k in time_points], condition_dict, condition, args.computational_model, subject_info[condition]['words used'], subject_folder)
+        '''
 
-    ### Writing the words actually used
-    with open(os.path.join(subject_folder, 'words_used_info.txt'), 'w') as o:
-        for condition, condition_info in subject_info.items():
-            words_used = condition_info['words used']
-            o.write('Condition:\t{}\nNumber of words used:\t{}\n\n'.format(condition, len(words_used)))
-
+    if not args.permutation:
+        ### Writing the words actually used
+        with open(os.path.join(subject_folder, 'words_used_info.txt'), 'w') as o:
+            for condition, condition_info in subject_info.items():
+                words_used = condition_info['words used']
+                o.write('Condition:\t{}\nNumber of words used:\t{}\n\n'.format(condition, len(words_used)))

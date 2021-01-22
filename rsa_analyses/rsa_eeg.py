@@ -26,6 +26,8 @@ if __name__ == '__main__':
     ### Loading the computational model
     if args.computational_model == 'w2v':
         computational_model = ComputationalModels().w2v
+    elif args.computational_model == 'original_cooc':
+        computational_model = ComputationalModels().original_cooc
 
     #rsa_per_subject(args, 3, computational_model)
     if args.permutation:
@@ -52,7 +54,7 @@ if __name__ == '__main__':
                 processes = list()
                 for permutation in batch:
 
-                    proc = Process(target=run_rsa, args=(args, '{:02}_{:03}'.format(s, permutation), evoked_responses, computational_model, all_time_points, ))
+                    proc = Process(target=run_rsa, args=(args, s, evoked_responses, computational_model, all_time_points, permutation, ))
                     processes.append(proc)
                     proc.start()
 
