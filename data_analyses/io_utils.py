@@ -53,6 +53,22 @@ class ComputationalModels:
 
         return cooc_original_similarities
 
+    def get_new_cooc(self):
+
+        cooc_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
+        with open(os.path.join('computational_models', 'cooc', 'cooc_original.csv'), 'r') as cooc_original_file:
+            for i, l in enumerate(cooc_original_file):
+                if i > 0: 
+                    l = l.strip().split(';')
+                    if l[0] in self.words and l[1] in self.words:
+                        cooc_original_similarities[l[0]][l[1]] = float(l[2])
+                        cooc_original_similarities[l[1]][l[0]] = float(l[2])
+
+        # Turning defaultdict into a regular dict
+        cooc_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in cooc_original_similarities.items()}
+
+        return cooc_original_similarities
+
 ### Collects and organizes the evoked responses
 
 class EvokedResponses:

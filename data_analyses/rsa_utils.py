@@ -17,6 +17,20 @@ from searchlight import SearchlightClusters, run_searchlight
 def restrict_evoked_responses(args, evoked_responses):
 
     events = evoked_responses.events
+    epochs = evoked_responses.original_epochs
+
+    assert len(events) == len(epochs)
+
+    if args.word_selection == 'targets_only':
+        target_indices = [ind for ind, ev in enumerate(events.items()) if ev[1][1]=='target']
+        events_infos = [v for k, v in events.items() if v[1]=='target']
+        del events
+        events = {i : v for i, v in enumerate(events_infos)}
+        epochs = [epochs[ind] for ind in target_indices]
+
+    assert len(events) == len(epochs)
+
+    '''
     if args.permutation:
         event_keys = [k for k in events.keys()]
         events_infos = [v for k, v in events.items()]
@@ -28,8 +42,7 @@ def restrict_evoked_responses(args, evoked_responses):
             random_conditions = random.sample([v[3] for v in events_infos], k=len(event_keys))
             random_event_values = [[events_infos[i][0], events_infos[i][1], events_infos[i][2], random_conditions[i]] for i in range(len(events_infos))]
         events = {k : v for k, v in zip(event_keys, random_event_values)}
-    epochs = evoked_responses.original_epochs
-    assert len(events) == len(epochs)
+    '''
 
     restricted_evoked_responses = collections.defaultdict(lambda : collections.defaultdict(list))
 
@@ -37,24 +50,12 @@ def restrict_evoked_responses(args, evoked_responses):
 
         current_event = events[current_epoch_index]
 
-        ### Considering only targets
-        if args.word_selection == 'targets_only':
-            if current_event[1] == 'target':
-                ### Creating 2 conditions: correct/wrong
-                if args.analysis == 'objective_accuracy':
-                    restricted_evoked_responses[current_event[2]][current_event[0]].append(epochs[current_epoch_index])
-                ### Creating 3 conditions: 1/2/3
-                elif args.analysis == 'subjective_judgments':
-                    restricted_evoked_responses[current_event[3]][current_event[0]].append(epochs[current_epoch_index])
-
-        ### Considering all words
-        else:
-            ### Creating 2 conditions: correct/wrong
-            if args.analysis == 'objective_accuracy':
-                restricted_evoked_responses[current_event[2]][current_event[0]].append(epochs[current_epoch_index])
-            ### Creating 3 conditions: 1/2/3
-            elif args.analysis == 'subjective_judgments':
-                restricted_evoked_responses[current_event[3]][current_event[0]].append(epochs[current_epoch_index])
+        ### Creating 2 conditions: correct/wrong
+        if args.analysis == 'objective_accuracy':
+            restricted_evoked_responses[current_event[2]][current_event[0]].append(epochs[current_epoch_index])
+        ### Creating 3 conditions: 1/2/3
+        elif args.analysis == 'subjective_judgments':
+            restricted_evoked_responses[current_event[3]][current_event[0]].append(epochs[current_epoch_index])
 
     return restricted_evoked_responses
 
@@ -79,7 +80,11 @@ def run_all_electrodes_rsa(evoked_dict, word_combs, computational_scores, time_p
 
     return current_condition_rho
 
-def run_rsa(args, s, selected_evoked, computational_model, all_time_points):
+def run_rsa(args, s, evoked_responses, computational_model, all_time_points):
+
+    
+    ### Selecting evoked responses for the current pairwise similarity computations
+    selected_evoked = restrict_evoked_responses(args, evoked_responses)
 
     base_folder = os.path.join('rsa_maps', 'rsa_searchlight_{}_{}_{}_{}_permutation_{}'.format(True if args.searchlight else False, args.analysis, args.word_selection, args.computational_model, True if args.permutation else False))
     os.makedirs(os.path.join(base_folder), exist_ok=True)
@@ -93,6 +98,10 @@ def run_rsa(args, s, selected_evoked, computational_model, all_time_points):
         #print('Current condition: {}'.format(condition))
 
         evoked_dict = {k : numpy.average(v, axis=0) for k, v in evoked_dict.items() if len(v) >= 4}
+        
+        if args.permutation:
+            keys = random.sample(evoked_dict.keys(), k=len(evoked_dict.keys()))
+            evoked_dict = {k : v[1] for k, v in zip(keys, evoked_dict.items())}
 
         present_words = [k for k in evoked_dict.keys()]
 
@@ -145,32 +154,3 @@ def run_rsa(args, s, selected_evoked, computational_model, all_time_points):
             words_used = condition_info['words used']
             o.write('Condition:\t{}\nNumber of words used:\t{}\n\n'.format(condition, len(words_used)))
 
-def rsa_per_subject(args, s, computational_model):
-
-    evoked_responses = EvokedResponses(s)
-    all_time_points = evoked_responses.time_points
-
-    if args.permutation:
-        for permutation in range(1, 301):
-
-            ### Selecting evoked responses for the current pairwise similarity computations
-            selected_evoked = restrict_evoked_responses(args, evoked_responses)
-
-            '''
-            ### Making sure we have conditions to compare
-            if len(selected_evoked.keys()) < 2:
-                for i in range(20):
-                    selected_evoked = restrict_evoked_responses(args, evoked_responses)
-                    if len(selected_evoked.keys()) < 2:
-                        continue
-                    else:
-                        pass
-            if len(selected_evoked.keys()) < 2:
-                print('Insufficient permutation data for subject: {}'.format(s))
-            '''
-            run_rsa(args, '{:02}_{:03}'.format(s, permutation), selected_evoked, computational_model, all_time_points)
-
-    else:
-        ### Selecting evoked responses for the current pairwise similarity computations
-        selected_evoked = restrict_evoked_responses(args, evoked_responses)
-        run_rsa(args, s, selected_evoked, computational_model, all_time_points)

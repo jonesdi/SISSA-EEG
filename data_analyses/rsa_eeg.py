@@ -8,10 +8,8 @@ import argparse
 import random
 from multiprocessing import Process
 
-from tqdm import tqdm
-
-from io_utils import ComputationalModels
-from rsa_utils import rsa_per_subject
+from io_utils import ComputationalModels, EvokedResponses
+from rsa_utils import run_rsa
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--permutation', action='store_true', default=False, help='Indicates whether to run a permutation analysis or not')
@@ -30,11 +28,47 @@ if __name__ == '__main__':
         computational_model = ComputationalModels().w2v
 
     #rsa_per_subject(args, 3, computational_model)
-    processes = list()
-    for s in range(3, 17): 
-        proc = Process(target=rsa_per_subject, args=(args, s, computational_model,))
-        processes.append(proc)
-        proc.start()
+    if args.permutation:
 
-    for proc in processes:
-        proc.join()
+        ### Preparing the batches
+        batches = list()
+        workers = os.cpu_count() - 1
+        separators = [i for i in range(1, 301, workers)]
+        for i, v in enumerate(separators):
+            if v != separators[-1]:
+                batches.append([i for i in range(v, separators[i+1])])
+            else:
+                batches.append([i for i in range(v, 301)])
+        for b in batches:
+            assert len(b) <= workers
+
+
+        for s in range(3, 17): 
+
+            evoked_responses = EvokedResponses(s)
+            all_time_points = evoked_responses.time_points
+
+            for batch in batches:
+                processes = list()
+                for permutation in batch:
+
+                    proc = Process(target=run_rsa, args=(args, '{:02}_{:03}'.format(s, permutation), evoked_responses, computational_model, all_time_points, ))
+                    processes.append(proc)
+                    proc.start()
+
+                for proc in processes:
+                    proc.join()
+    
+    else:
+        processes = list()
+
+        for s in range(3, 17): 
+            evoked_responses = EvokedResponses(s)
+            all_time_points = evoked_responses.time_points
+
+            proc = Process(target=run_rsa, args=(args, s, evoked_responses, computational_model, all_time_points))
+            processes.append(proc)
+            proc.start()
+
+        for proc in processes:
+            proc.join()
