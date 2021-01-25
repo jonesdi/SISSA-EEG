@@ -76,7 +76,7 @@ for s in tqdm(range(3, 17)):
             except FileNotFoundError:
                 print(perm)
 
-    plot_path = re.sub('true.+', '', prepare_folder(args, s).replace('rsa_maps', 'permutation_results'))
+    plot_path = re.sub('true$', '', prepare_folder(args, s).replace('rsa_maps', 'permutation_results'))
     os.makedirs(plot_path, exist_ok=True)
     #t_values = collections.defaultdict(lambda: collections.defaultdict(list))
     all_p_values = collections.defaultdict(lambda: collections.defaultdict(list))
