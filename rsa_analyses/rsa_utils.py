@@ -110,6 +110,7 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points, per
     hop = 2
 
     for condition, evoked_dict in selected_evoked.items():
+        print(condition)
 
         #print('Current condition: {}'.format(condition))
 
@@ -144,6 +145,7 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points, per
     ### Writing to file
     for condition, condition_dict in subject_results.items():
 
+        print('Now writing results for {}'.format(condition))
         ### Writing the Spearman rho maps
         with open(os.path.join(subject_folder, '{}.map'.format(condition)), 'w') as o:
             if args.searchlight:

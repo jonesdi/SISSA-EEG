@@ -6,6 +6,44 @@ matplotlib.use('Agg')
 
 import matplotlib.pyplot as plt
 
+### File 2: plotting conditions against one another
+def plot_two(s, electrode_name, output_path, current_electrode_ps, current_electrode_rhos, current_permutation_rhos, time_points, counts):
+
+    colors = {'wrong' : 'goldenrod', 'correct' : 'teal',
+             'medium' : 'teal', 'high' : 'goldenrod', 'low' : 'darkgray'}
+
+    fig, ax = plt.subplots(constrained_layout=True)
+    ax.set_ymargin(0.5)
+    ax.set_xmargin(0.1)
+    #ax.invert_yaxis()
+
+    for condition, condition_rhos in current_electrode_rhos.items():
+
+        ### Main line
+        ax.plot(time_points, condition_rhos, label='original - N={}'.format(counts[condition]), color=colors[condition])
+
+        ### Permutation line and errorbars
+        ax.errorbar(x=time_points, y=[numpy.nanmean(v) for v in current_permutation_rhos[condition]], yerr=[numpy.nanstd(v) for v in current_permutation_rhos[condition]], label='permutation avg', color='darkgrey', ecolor=colors[condition], alpha=.25)
+
+        ### Significant time points
+        xs = [k[0] for k in current_electrode_ps[condition] if k[1] <= .05]
+        ys = [condition_rhos[i] for i, k in enumerate(current_electrode_ps[condition]) if k[1] <= .05] 
+        ax.scatter(xs, ys, label='p<=.05'.format(condition), edgecolors='black', linewidths=1., color='white')
+
+    if 'subjective' in output_path:
+        ax.legend(ncol=3, loc=9, bbox_to_anchor=(0.5, 1.125))
+    else:
+        ax.legend(ncol=2, loc=9, bbox_to_anchor=(0.5, 1.125))
+
+    ax.set_ylabel('Spearman rho')
+    ax.set_xlabel('Time')
+    ax.set_title('Spearman rho values for subject {} at each time point'.format(s, condition.capitalize()), pad=40)
+    #ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
+    plt.savefig(os.path.join(output_path, '{}_{}_plot.png'.format(electrode_name, condition)), dpi=300)
+    plt.clf()
+    plt.close()
+    
+
 def basic_line_plot_searchlight_electrodes(time_points, y_dict, condition, model_name, number_of_words, output_path):
     
     fig, ax = plt.subplots(constrained_layout=True)
