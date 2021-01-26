@@ -46,6 +46,7 @@ if __name__ == '__main__':
 
 
         for s in range(3, 17): 
+        #for s in range(12, 17): 
 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points

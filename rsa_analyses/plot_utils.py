@@ -43,7 +43,7 @@ def basic_line_plot_searchlight_electrodes(time_points, y_dict, condition, model
     #output_path = os.path.join('rsa_results', word_selection, certainty)
     #os.makedirs(output_path, exist_ok=True)
     #plt.savefig(os.path.join(output_path, 'rsa_sub_{:02}_{}.png'.format(s, certainty)))
-    plt.savefig(os.path.join(output_path, '{}.png'.format(condition)))
+    plt.savefig(os.path.join(output_path, '{}.png'.format(condition)), dpi=300)
     plt.clf()
     plt.close()
 
@@ -65,17 +65,18 @@ def basic_line_plot_all_electrodes_subject_p_values(s, time_points, y_dict, data
     ax.set_xlabel('Time')
     ax.set_title('P-values for subject {} at each time point'.format(s), pad=40)
     ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
-    plt.savefig(os.path.join(output_path, '{}-values_plot.png'.format(data_type)))
+    plt.savefig(os.path.join(output_path, '{}-values_plot.png'.format(data_type)), dpi=300)
     plt.clf()
     plt.close()
 
 def basic_scatter_plot_all_electrodes_subject_p_values(s, time_points, y_dict, data_type, output_path, counts={}):
 
-    colors = {'wrong' : 'goldenrod', 'correct' : 'teal'}
+    colors = {'wrong' : 'goldenrod', 'correct' : 'teal',
+             'medium' : 'teal', 'high' : 'goldenrod', 'low' : 'darkgray'}
     fig, ax = plt.subplots(constrained_layout=True)
     ax.set_ymargin(0.5)
     ax.set_xmargin(0.1)
-    ax.invert_yaxis()
+
 
     for condition, values_lists in y_dict.items():
         if 'average' in data_type:
@@ -104,18 +105,30 @@ def basic_scatter_plot_all_electrodes_subject_p_values(s, time_points, y_dict, d
 
                 #ax.plot(time_points, values, label=condition)
 
-    ax.legend(ncol=2, loc=9, bbox_to_anchor=(0.5, 1.125))
-    ax.set_ylabel('{}-value'.format(data_type.capitalize()))
+    model = 'w2v' if 'w2v' in output_path else 'original cooc'
+    if not 'average' in data_type:
+        ax.set_title('Statistically significant time points for subject {}\nmodel: {}'.format(s, model), pad=40)
+        ax.set_ylabel('{}-value'.format(data_type.capitalize()))
+    else:
+        ax.set_title('Average p-values for subject {} - model: {}'.format(s, model), pad=40)
+        ax.set_ylabel('average {}-value'.format(data_type.capitalize()))
+
+    if 'subjective' in output_path:
+        ax.legend(ncol=3, loc=9, bbox_to_anchor=(0.5, 1.125))
+    else:
+        ax.legend(ncol=2, loc=9, bbox_to_anchor=(0.5, 1.125))
+
+    ax.invert_yaxis()
     ax.set_xlabel('Time')
-    ax.set_title('Statistically significant time points for subject {}'.format(s), pad=40)
     #ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
-    plt.savefig(os.path.join(output_path, '{}-values_plot.png'.format(data_type)))
+    plt.savefig(os.path.join(output_path, '{}_{}-values_plot.png'.format(model, data_type)), dpi=300)
     plt.clf()
     plt.close()
 
 def line_and_scatter_plot_all_electrodes_subject_p_values(s, time_points, p_values, original_rhos, permutation_rhos, condition, output_path, electrode_name, counts):
     
-    colors = {'wrong' : 'goldenrod', 'correct' : 'teal'}
+    colors = {'wrong' : 'goldenrod', 'correct' : 'teal',
+             'medium' : 'teal', 'high' : 'goldenrod', 'low' : 'darkgray'}
     fig, ax = plt.subplots(constrained_layout=True)
     ax.set_ymargin(0.5)
     ax.set_xmargin(0.1)
@@ -132,12 +145,15 @@ def line_and_scatter_plot_all_electrodes_subject_p_values(s, time_points, p_valu
 
     #ax.plot(time_points, values, label=condition)
 
-    ax.legend(ncol=3, loc=9, bbox_to_anchor=(0.5, 1.125))
+    if 'subjective' in output_path:
+        ax.legend(ncol=3, loc=9, bbox_to_anchor=(0.5, 1.125))
+    else:
+        ax.legend(ncol=2, loc=9, bbox_to_anchor=(0.5, 1.125))
     ax.set_ylabel('Spearman rho')
     ax.set_xlabel('Time')
     ax.set_title('Spearman rho values for subject {} at each time point\nCondition: {}'.format(s, condition.capitalize()), pad=40)
     #ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
-    plt.savefig(os.path.join(output_path, '{}_{}_plot.png'.format(electrode_name, condition)))
+    plt.savefig(os.path.join(output_path, '{}_{}_plot.png'.format(electrode_name, condition)), dpi=300)
     plt.clf()
     plt.close()
 
@@ -164,7 +180,7 @@ def subject_electrodes_scatter_plot(s, plot_time_points, subject_electrodes_plot
     ax.set_xlabel('Time')
     ax.set_title('Significant time points for subject {}\nCondition: {}'.format(s, condition.capitalize()), pad=40)
     #ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
-    plt.savefig(os.path.join(plot_path, 'all_electrodes_{}_plot.png'.format(condition)))
+    plt.savefig(os.path.join(plot_path, 'all_electrodes_{}_plot.png'.format(condition)), dpi=300)
     plt.clf()
     plt.close()
 
@@ -188,6 +204,6 @@ def confusion_matrix(s, data_name, matrix, rows_labels, columns_labels, conditio
     #ax.set_xticklabels(['']+columns_labels)
     ax.set_title('Electrode {} over time points\nSubject {}    Condition: {}'.format(data_name.replace('_', ' - '), s, condition.capitalize()), pad=40)
     #ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
-    plt.savefig(os.path.join(plot_path, '{}_matrix_{}_plot.png'.format(data_name, condition)))
+    plt.savefig(os.path.join(plot_path, '{}_matrix_{}_plot.png'.format(data_name, condition)), dpi=300)
     plt.clf()
     plt.close()
