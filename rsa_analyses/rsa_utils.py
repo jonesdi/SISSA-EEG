@@ -110,7 +110,6 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points, per
     hop = 2
 
     for condition, evoked_dict in selected_evoked.items():
-        print(condition)
 
         #print('Current condition: {}'.format(condition))
 

@@ -45,7 +45,7 @@ if __name__ == '__main__':
             assert len(b) <= workers
 
 
-        for s in range(3, 17): 
+        for s in range(4, 17): 
         #for s in range(12, 17): 
 
             evoked_responses = EvokedResponses(s)
@@ -55,6 +55,8 @@ if __name__ == '__main__':
                 processes = list()
                 for permutation in batch:
 
+                    #run_rsa(args, s, evoked_responses, computational_model, all_time_points, permutation)
+                    
                     proc = Process(target=run_rsa, args=(args, s, evoked_responses, computational_model, all_time_points, permutation, ))
                     processes.append(proc)
                     proc.start()

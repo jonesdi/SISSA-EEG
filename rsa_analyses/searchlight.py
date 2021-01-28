@@ -45,7 +45,6 @@ def run_searchlight(evoked_dict, word_combs, computational_scores, time_points):
 
     current_condition_rho = collections.defaultdict(list)
 
-
     for center in tqdm(range(128)):
 
         relevant_electrode_indices = searchlight_clusters.neighbors[center]

@@ -32,8 +32,9 @@ timepoint_converter = EvokedResponses(3).time_points
 if args.searchlight:
     searchlight_converter = {i : v for i, v in enumerate([t for t in range(0, len(timepoint_converter), 2)])}
 
-
-for s in tqdm(range(3, 17)):
+final_plot = dict()
+#for s in tqdm(range(3, 17)):
+for s in tqdm(range(3, 4)):
     ### Collecting the true results
 
     results = collections.defaultdict(lambda : collections.defaultdict(lambda: collections.defaultdict(list)))
@@ -58,7 +59,7 @@ for s in tqdm(range(3, 17)):
             with open(os.path.join(base_folder, 'words_used_info.txt'), 'r') as input_file:
                 word_counts = [l.strip().split('\t')[1] for l in input_file.readlines() if len(l.split('\t'))>1]
             for i in range(0, len(word_counts), 2):
-                counts[i] = int(word_counts[i+1])
+                counts[word_counts[i]] = int(word_counts[i+1])
         except FileNotFoundError:
             counts['correct'] = 'unk'
             counts['wrong'] = 'unk'
@@ -108,48 +109,54 @@ for s in tqdm(range(3, 17)):
 
         for condition, condition_dict in electrode_dict.items():
 
-            original_rhos = list()
-            permutation_rhos = list()
-            p_values = list()
+            if counts[condition] >= 2:
 
-            ### File 1
-            with open(os.path.join(plot_path, '{}_{}_significant_time_points.txt'.format(electrode_name, condition)), 'w') as o:
-                o.write('Condition\ttime point\tp-value\tt-value\n')
+                original_rhos = list()
+                permutation_rhos = list()
+                p_values = list()
 
-            time_points = [t for t in range(len(condition_dict['true']))]
-            if args.searchlight:
-                plot_time_points = [timepoint_converter[searchlight_converter[t]] for t in time_points]
-            else:
-                plot_time_points = [timepoint_converter[t] for t in time_points]
+                ### File 1
+                with open(os.path.join(plot_path, '{}_{}_significant_time_points.txt'.format(electrode_name, condition)), 'w') as o:
+                    o.write('Condition\ttime point\tp-value\tt-value\n')
 
-            for t in time_points:
-
+                time_points = [t for t in range(len(condition_dict['true']))]
                 if args.searchlight:
-                    readable_time_point = timepoint_converter[searchlight_converter[t]]
+                    plot_time_points = [timepoint_converter[searchlight_converter[t]] for t in time_points]
                 else:
-                    readable_time_point = timepoint_converter[t]
-                rho_at_t = float(condition_dict['true'][t])
-                rho_scores = [float(v[t]) for k, v in condition_dict.items() if k!='true']
-                p_value = 1.-(stats.percentileofscore(rho_scores, rho_at_t)/100.)
-                t_value = stats.t.ppf(1.-(p_value), 299)
+                    plot_time_points = [timepoint_converter[t] for t in time_points]
 
-                if p_value <= .05:
-                    #t_values[condition]['all_electrodes'].append((readable_time_point, t_value))
+                for t in time_points:
 
-                    ### File 1
-                    with open(os.path.join(plot_path, '{}_{}_significant_time_points.txt'.format(electrode_name, condition)), 'a') as o:
-                        o.write('{}\t{}\t{}\t{}\n'.format(condition, readable_time_point, p_value, t_value))
-                    #if args.searchlight:
-                        #subject_electrodes_plot[electrode_name].append(readable_time_point)
+                    if args.searchlight:
+                        readable_time_point = timepoint_converter[searchlight_converter[t]]
+                    else:
+                        readable_time_point = timepoint_converter[t]
+                    rho_at_t = float(condition_dict['true'][t])
+                    rho_scores = [float(v[t]) for k, v in condition_dict.items() if k!='true']
+                    p_value = 1.-(stats.percentileofscore(rho_scores, rho_at_t)/100.)
+                    t_value = stats.t.ppf(1.-(p_value), 299)
 
-                original_rhos.append(rho_at_t)
-                permutation_rhos.append(rho_scores)
-                p_values.append((readable_time_point, p_value))
+                    if p_value <= .05:
+                        #t_values[condition]['all_electrodes'].append((readable_time_point, t_value))
 
-            ### Collecting p-values for file 2
-            current_electrode_ps[condition] = p_values
-            current_electrode_rhos[condition] = original_rhos
-            current_permutation_rhos[condition] = permutation_rhos
+                        ### File 1
+                        with open(os.path.join(plot_path, '{}_{}_significant_time_points.txt'.format(electrode_name, condition)), 'a') as o:
+                            o.write('{}\t{}\t{}\t{}\n'.format(condition, readable_time_point, p_value, t_value))
+                        #if args.searchlight:
+                            #subject_electrodes_plot[electrode_name].append(readable_time_point)
+
+                    original_rhos.append(rho_at_t)
+                    permutation_rhos.append(rho_scores)
+                    p_values.append((readable_time_point, p_value))
+
+
+                ### Collecting p-values for file 2
+                current_electrode_ps[condition] = p_values
+                current_electrode_rhos[condition] = original_rhos
+                current_permutation_rhos[condition] = permutation_rhos
+
+                ### Collecting p-values for file 3
+                final_plot[condition].append([k[1] for k in p_values])
 
         ### File 2: plotting conditions against one another
         plot_two(s, electrode_name, plot_path, current_electrode_ps, current_electrode_rhos, current_permutation_rhos, time_points, counts)
@@ -163,9 +170,6 @@ for s in tqdm(range(3, 17)):
         rho_matrix[condition][electrode_name[:1]].append(current_electrode_rhos)
         p_matrix[condition][electrode_name[:1]].append(current_electrode_ps)
 
-
-
-
     ### Plotting file 3 (searchlight), the confusion matrix for the searchlight cluster results
     if args.searchlight:
         #subject_electrodes_scatter_plot(s, plot_time_points, subject_electrodes_plot, condition, plot_path)
@@ -176,13 +180,15 @@ for s in tqdm(range(3, 17)):
             for electrode_bundle, rho_lists in bundles_dict.items():
                 confusion_matrix(s, 'bundle_{}_p-value'.format(electrode_bundle), p_lists, [k for k in condition_dict.keys()], plot_time_points, condition, plot_path)
 
+    '''
     ### Preparing data file 3 (non-searchlight), the final plot for non-searchlight
     else:
         final_plot = collections.defaultdict(list)
         for condition, electrode_dict in all_p_values.items():
+        
             for electrode_name, electrode_tuples in electrode_dict.items():
                 final_plot[condition].append([k[1] for k in electrode_tuples])
-
+    '''
     '''
     ### Plotting the significant points for all conditions together, for non-searchlight data
     if not args.searchlight:
