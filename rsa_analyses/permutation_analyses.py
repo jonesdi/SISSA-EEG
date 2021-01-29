@@ -32,9 +32,9 @@ timepoint_converter = EvokedResponses(3).time_points
 if args.searchlight:
     searchlight_converter = {i : v for i, v in enumerate([t for t in range(0, len(timepoint_converter), 2)])}
 
-final_plot = dict()
+final_plot = collections.defaultdict(list)
 #for s in tqdm(range(3, 17)):
-for s in tqdm(range(3, 4)):
+for s in tqdm(range(3, 5)):
     ### Collecting the true results
 
     results = collections.defaultdict(lambda : collections.defaultdict(lambda: collections.defaultdict(list)))
@@ -156,10 +156,13 @@ for s in tqdm(range(3, 4)):
                 current_permutation_rhos[condition] = permutation_rhos
 
                 ### Collecting p-values for file 3
-                final_plot[condition].append([k[1] for k in p_values])
+                p_values_only = [k[1] for k in p_values]
+                final_plot[condition].append(p_values_only)
+                rho_matrix[condition][electrode_name] = original_rhos
+                p_matrix[condition][electrode_name] = p_values_only
 
         ### File 2: plotting conditions against one another
-        plot_two(s, electrode_name, plot_path, current_electrode_ps, current_electrode_rhos, current_permutation_rhos, time_points, counts)
+        plot_two(s, electrode_name, args.computational_model, plot_path, current_electrode_ps, current_electrode_rhos, current_permutation_rhos, time_points, counts)
 
         #line_and_scatter_plot_all_electrodes_subject_p_values(s, plot_time_points, p_values, original_rhos, permutation_rhos, condition, plot_path, electrode_name, counts)
 
@@ -167,18 +170,21 @@ for s in tqdm(range(3, 4)):
         #all_p_values[electrode_name] = current_electrode_ps
         #final_plot[condition][electrode_name] = p_values
         all_p_values[condition][electrode_name] = current_electrode_ps
-        rho_matrix[condition][electrode_name[:1]].append(current_electrode_rhos)
-        p_matrix[condition][electrode_name[:1]].append(current_electrode_ps)
 
     ### Plotting file 3 (searchlight), the confusion matrix for the searchlight cluster results
     if args.searchlight:
         #subject_electrodes_scatter_plot(s, plot_time_points, subject_electrodes_plot, condition, plot_path)
-        for condition, bundles_dict in rho_matrix.items():
-            for electrode_bundle, rho_lists in bundles_dict.items():
-                confusion_matrix(s, 'bundle_{}_rho'.format(electrode_bundle), rho_lists, [k for k in condition_dict.keys()], plot_time_points, condition, plot_path)
-        for condition, bundles_dict in p_matrix.items():
-            for electrode_bundle, rho_lists in bundles_dict.items():
-                confusion_matrix(s, 'bundle_{}_p-value'.format(electrode_bundle), p_lists, [k for k in condition_dict.keys()], plot_time_points, condition, plot_path)
+        for condition, condition_dict in rho_matrix.items():
+            for electrode in ['A', 'B', 'C', 'D']:
+                electrode_names = ['{}{}'.format(electrode, i) for i in range(1, 33)]
+                rho_electrodes = [condition_dict[e] for e in electrode_names]
+                confusion_matrix(s, electrode, 'rho', args.computational_model, rho_electrodes, condition, plot_path)
+
+        for condition, condition_dict in p_matrix.items():
+            for electrode in ['A', 'B', 'C', 'D']:
+                electrode_names = ['{}{}'.format(electrode, i) for i in range(1, 33)]
+                p_electrodes = [condition_dict[e] for e in electrode_names]
+                confusion_matrix(s, electrode, 'p', args.computational_model, p_electrodes, condition, plot_path)
 
     '''
     ### Preparing data file 3 (non-searchlight), the final plot for non-searchlight
@@ -197,7 +203,8 @@ for s in tqdm(range(3, 4)):
     else:
         pass
     '''
-        
+assert len(final_plot['correct']) == 2 
+assert len(final_plot['wrong']) == 2 
 ### File 3 (non-searchlight)
 # Plotting the across subject average for the non-searchlight condition
 if not args.searchlight:

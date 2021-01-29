@@ -7,13 +7,13 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 ### File 2: plotting conditions against one another
-def plot_two(s, electrode_name, output_path, current_electrode_ps, current_electrode_rhos, current_permutation_rhos, time_points, counts):
+def plot_two(s, electrode_name, computational_model, output_path, current_electrode_ps, current_electrode_rhos, current_permutation_rhos, time_points, counts):
 
     colors = {'wrong' : 'darkorange', 'correct' : 'teal',
              'medium' : 'teal', 'high' : 'darkorange', 'low' : 'darkgray'}
 
     fig, ax = plt.subplots(constrained_layout=True)
-    ax.set_ymargin(0.5)
+    ax.set_ymargin(0.1)
     ax.set_xmargin(0.1)
     #ax.invert_yaxis()
 
@@ -32,13 +32,13 @@ def plot_two(s, electrode_name, output_path, current_electrode_ps, current_elect
         ax.scatter(xs, ys, label='p<=.05'.format(condition), edgecolors=colors[condition], linewidths=1., color='white')
 
     if 'subjective' in output_path:
-        ax.legend(ncol=5, loc=9, bbox_to_anchor=(0.5, 1.15), fontsize='x-small')
+        ax.legend(ncol=5, loc=9, bbox_to_anchor=(0.5, 1.135), fontsize='x-small')
     else:
-        ax.legend(ncol=3, loc=9, bbox_to_anchor=(0.5, 1.15), fontsize='x-small')
+        ax.legend(ncol=3, loc=9, bbox_to_anchor=(0.5, 1.135), fontsize='x-small')
 
     ax.set_ylabel('Spearman rho')
     ax.set_xlabel('Time')
-    ax.set_title('Spearman rho values for subject {} at each time point'.format(s, condition.capitalize()), pad=40)
+    ax.set_title('{} - Spearman rho values against {} for subject {} at each time point'.format(electrode_name, computational_model,s), pad=40)
     #ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
     plt.savefig(os.path.join(output_path, '{}_plot.png'.format(electrode_name)), dpi=300)
     plt.clf()
@@ -225,33 +225,39 @@ def subject_electrodes_scatter_plot(s, plot_time_points, subject_electrodes_plot
     plt.clf()
     plt.close()
 
-def confusion_matrix(s, data_name, matrix, rows_labels, columns_labels, condition, plot_path):
+def confusion_matrix(s, electrode, data_type, computational_model, matrix, condition, plot_path):
 
     fig, ax = plt.subplots(constrained_layout=True)
     
     cmaps = {'correct' : 'Oranges', 'wrong' : 'PuBu', 'high' : 'PuBu', 'medium' : 'Oranges', 'low' : 'Greys'}
 
-    ys = [k for k in matrix.keys()]
-    xs = [v for k, v in matrix.items()]
-    if 'rho' in data_name:
+    #ys = [k for k in matrix.keys()]
+    #xs = [v for k, v in matrix.items()]
+    if data_type == 'rho':
         #mat = ax.matshow(matrix, cmap='YlOrRd')
-        mat = ax.matshow(xs, cmap=cmaps[condition], extent=(-0.2,1.1,32,0))
+        mat = ax.imshow(matrix, cmap=cmaps[condition], extent=(-0.2,1.1,32,0))
+        ax.set_title('Significant {}-values over time points\nBundle {} - Subject {} - Condition: {}'.format(data_type.capitalize(), electrode, s, condition.capitalize()), pad=10)
     else:
         new_matrix = list()
-        for mat in xs:
+        for mat in matrix:
             new_mat = [k if k <= .05 else .5 for k in mat]
             new_matrix.append(new_mat)
         #mat = ax.matshow(new_matrix, cmap='YlOrRd_r')
-        mat = ax.matshow(new_matrix, cmap='{}_r'.format(cmaps[condition]), extent=(-0.2,1.1,32,0))
+        mat = ax.imshow(new_matrix, cmap='{}_r'.format(cmaps[condition]), extent=(-0.2,1.1,32,0))
+        ax.set_title('{} values against {} over time points\nBundle {} - Subject {} - Condition: {}'.format(data_type.capitalize(), computational_model, electrode, s, condition.capitalize()), pad=10)
 
     ax.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(.1))
     ax.set_aspect(aspect='auto')
-    ax.grid(which="minor", color="w", linestyle='-', linewidth=1.)
+    ax.set_yticks([i-.5 for i in range(1, 33)])
+    ax.set_yticklabels(['{}{}'.format(electrode, i) for i in range(1, 33)], fontsize='xx-small')
+    ax.hlines(y=[i for i in range(32)], xmin=-0.2, xmax=1.1, color='black', linewidths=.5)
+    ax.vlines(x=[float(i)/10 for i in range(-2, 11)], ymin=0, ymax=32, color='darkgray', linewidths=.5, linestyles='dashed')
+    for edge, spine in ax.spines.items():
+        spine.set_visible(False)
+    #ax.grid(which="minor", color="w", linestyle='-', linewidth=3.)
     plt.colorbar(mat, ax=ax)
     #ax.set_yticklabels(['']+ys)
     #ax.set_xticklabels(['']+columns_labels)
-    ax.set_title('{} correlations over time points\nSubject {}    Condition: {}'.format(data_name.replace('_', ' - '), s, condition.capitalize()), pad=40)
-    #ax.hlines(y=1., xmin=time_points[0], xmax=time_points[-1], linestyle='dashed', color='darkgrey')
-    plt.savefig(os.path.join(plot_path, '{}_matrix_{}_plot.png'.format(data_name, condition)), dpi=300)
+    plt.savefig(os.path.join(plot_path, '{}_bundle_{}_{}_matrix.png'.format(data_type, electrode, condition)), dpi=300)
     plt.clf()
     plt.close()

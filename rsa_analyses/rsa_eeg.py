@@ -45,8 +45,8 @@ if __name__ == '__main__':
             assert len(b) <= workers
 
 
-        for s in range(4, 17): 
-        #for s in range(12, 17): 
+        #for s in range(4, 5): 
+        for s in range(12, 17): 
 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
