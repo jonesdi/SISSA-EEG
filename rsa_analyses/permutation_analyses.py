@@ -7,10 +7,7 @@ from scipy import stats
 
 from searchlight import SearchlightClusters
 from io_utils import EvokedResponses
-from plot_utils import basic_line_plot_all_electrodes_subject_p_values, basic_scatter_plot_all_electrodes_subject_p_values, \
-                       line_and_scatter_plot_all_electrodes_subject_p_values, subject_electrodes_scatter_plot, \
-                       confusion_matrix, \
-                       plot_two
+from plot_utils import plot_two, plot_three, confusion_matrix
 from rsa_utils import prepare_folder
 
 from tqdm import tqdm
@@ -33,8 +30,8 @@ if args.searchlight:
     searchlight_converter = {i : v for i, v in enumerate([t for t in range(0, len(timepoint_converter), 2)])}
 
 final_plot = collections.defaultdict(list)
-#for s in tqdm(range(3, 17)):
-for s in tqdm(range(3, 5)):
+for s in tqdm(range(3, 17)):
+#for s in tqdm(range(3, 5)):
     ### Collecting the true results
 
     results = collections.defaultdict(lambda : collections.defaultdict(lambda: collections.defaultdict(list)))
@@ -68,6 +65,7 @@ for s in tqdm(range(3, 5)):
             counts['high'] = 'unk'
 
     for condition in conditions:
+        missing = list()
         for perm in range(1, 301):
 
             permutation_data_folder = prepare_folder(args, s, perm)
@@ -82,7 +80,9 @@ for s in tqdm(range(3, 5)):
                         #results[condition][electrode_index_to_code[i]][perm] = [float(n) for n in electrode]
                         results[electrode_index_to_code[i]][condition][perm] = [float(n) for n in electrode]
             except FileNotFoundError:
-                print(perm)
+                missing.append(perm)
+        if len(missing) > 0:
+            print('Couldn\'t find files for permutations no: {}'.format(missing)
 
     plot_path = re.sub('true$', '', prepare_folder(args, s).replace('rsa_maps', 'permutation_results'))
     os.makedirs(plot_path, exist_ok=True)
@@ -203,11 +203,9 @@ for s in tqdm(range(3, 5)):
     else:
         pass
     '''
-assert len(final_plot['correct']) == 2 
-assert len(final_plot['wrong']) == 2 
 ### File 3 (non-searchlight)
 # Plotting the across subject average for the non-searchlight condition
 if not args.searchlight:
     final_plot = {k : numpy.nanmean(v, axis=0) for k, v in final_plot.items()}
     final_plot_path = re.sub('sub-.+', '', prepare_folder(args, s).replace('rsa_maps', 'permutation_results'))
-    basic_scatter_plot_all_electrodes_subject_p_values('all_subjects', [timepoint_converter[t] for t in time_points], final_plot, 'average_p', final_plot_path)
+    plot_three('all_subjects', [timepoint_converter[t] for t in time_points], final_plot, 'average_p', final_plot_path)
