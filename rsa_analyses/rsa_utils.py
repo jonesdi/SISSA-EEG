@@ -11,7 +11,6 @@ from tqdm import tqdm
 
 
 from io_utils import EvokedResponses
-from plot_utils import basic_line_plot_searchlight_electrodes
 from searchlight import SearchlightClusters, run_searchlight
 
 def restrict_evoked_responses(args, evoked_responses):
@@ -156,11 +155,6 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points, per
                 for rho in rho_map:
                     o.write('{}\t'.format(rho))
                 o.write('\n')
-
-        '''
-        ### Plotting the basic plot for each condition
-        basic_line_plot_searchlight_electrodes([all_time_points[k] for k in time_points], condition_dict, condition, args.computational_model, subject_info[condition]['words used'], subject_folder)
-        '''
 
     if not args.permutation:
         ### Writing the words actually used

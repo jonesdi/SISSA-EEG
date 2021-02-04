@@ -82,7 +82,7 @@ for s in tqdm(range(3, 17)):
             except FileNotFoundError:
                 missing.append(perm)
         if len(missing) > 0:
-            print('Couldn\'t find files for permutations no: {}'.format(missing)
+            print('Couldn\'t find files for permutations no: {}'.format(missing))
 
     plot_path = re.sub('true$', '', prepare_folder(args, s).replace('rsa_maps', 'permutation_results'))
     os.makedirs(plot_path, exist_ok=True)
