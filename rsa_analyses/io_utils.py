@@ -1,6 +1,11 @@
 import collections
 import mne
 import os
+import itertools
+from matplotlib import pyplot
+
+from scipy import stats
+from sklearn.manifold import TSNE
 
 ### Importing computational models
 
@@ -52,15 +57,14 @@ class ComputationalModels:
         cooc_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in cooc_original_similarities.items()}
 
         return cooc_original_similarities
-
-    def get_new_cooc(self):
+    def get_original_cooc(self):
 
         cooc_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
         with open(os.path.join('computational_models', 'cooc', 'cooc_original.csv'), 'r') as cooc_original_file:
             for i, l in enumerate(cooc_original_file):
                 if i > 0: 
                     l = l.strip().split(';')
-                    if l[0] in self.words and l[1] in self.words:
+                    if l[0] in self.words and l[1] in self.words and l[0] != l[1]:
                         cooc_original_similarities[l[0]][l[1]] = float(l[2])
                         cooc_original_similarities[l[1]][l[0]] = float(l[2])
 
@@ -68,6 +72,72 @@ class ComputationalModels:
         cooc_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in cooc_original_similarities.items()}
 
         return cooc_original_similarities
+
+    def get_new_cooc(self, mode='basic_cooc'):
+
+        cooc_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
+        mode_indices = {'basic_cooc' : 1, 'ppmi' : 3, 'w2v_style' : 5}
+
+        base_folder = os.path.join('computational_models', 'cooc', 'new_cooc')
+        for w in self.words:
+            with open(os.path.join(base_folder, '{}.cooc'.format(w))) as w_file:
+                lines = [l.strip().split('\t') for l in w_file.readlines()]
+            header = lines[0]
+            print([(i, h) for i, h in enumerate(header)])
+            sims = lines[1:]
+            for l in sims:
+                if l[0] != w:
+                    cooc_original_similarities[w][l[0]] = float(l[mode_indices[mode]])
+
+        # Turning defaultdict into a regular dict
+        cooc_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in cooc_original_similarities.items()}
+
+        return cooc_original_similarities
+
+    def compare_models(self, tsne=False):
+       
+        words = [c for c in itertools.combinations(self.words, 2)]
+        models = dict()
+        sim_models = collections.defaultdict(list)
+        results = dict()
+
+        models['w2v'] = self.get_w2v_sims()
+        models['original_cooc'] = self.get_original_cooc()
+        models['new_cooc'] = self.get_new_cooc()
+        models['ppmi'] = self.get_new_cooc(mode='ppmi')
+        models['w2v_window_cooc'] = self.get_new_cooc(mode='w2v_style')
+
+        for m_name, m in models.items():
+            for w_one, w_two in words:
+                sim_models[m_name].append(m[w_one][w_two])
+        
+        combs = itertools.combinations([k for k in models.keys()], 2)
+        for m_one, m_two in combs:
+
+            model_one = sim_models[m_one]
+            model_two = sim_models[m_two]
+
+            pearson = stats.pearsonr(model_one, model_two)[0]
+            spearman = stats.spearmanr(model_one, model_two)[0]
+
+            results[(m_one, m_two)] = ['pearson: {}'.format(pearson), 'spearman: {}'.format(spearman)]
+
+        if tsne == True:
+
+            tsne_model_en_2d = TSNE(perplexity=15, n_components=2, init='pca', n_iter=3500, random_state=32)
+            embeddings = tsne_model_en_2d.fit_transform([v for k, v in sim_models.items()])
+
+            fig, ax = pyplot.subplots()
+            
+            for m_name, emb in zip([k for k in sim_models.keys()], embeddings):
+                ax.scatter(emb[0], emb[1], label=m_name)
+
+            ax.set_title( 'T-SNE visualizations of different models', fontsize='xx-large', fontweight='bold', pad = 15.0)
+            ax.legend()
+
+            pyplot.savefig('tsne models comparison', format='png', bbox_inches='tight')
+
+        return results
 
 ### Collects and organizes the evoked responses
 
