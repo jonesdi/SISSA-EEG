@@ -3,6 +3,7 @@ import os
 import collections
 import numpy
 import re
+import itertools
 from scipy import stats
 
 from searchlight import SearchlightClusters
@@ -13,7 +14,7 @@ from rsa_utils import prepare_folder
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--searchlight', action='store_true', default=False, help='Indicates whether to run a searchlight analysis or not')
+parser.add_argument('--searchlight', action='store_true', default=True, help='Indicates whether to run a searchlight analysis or not')
 parser.add_argument('--analysis', default='objective_accuracy', choices=['objective_accuracy', 'subjective_judgments'], help='Indicates which pairwise similarities to compare, whether by considering objective accuracy or subjective judgments')
 parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'targets_only'], help='Indicates whether to use for the analyses only the targets or all the words')
 parser.add_argument('--computational_model', default='w2v', choices=['w2v', 'original_cooc'], help='Indicates which similarities to use for comparison to the eeg similarities')
@@ -43,7 +44,9 @@ for s in tqdm(range(3, 17)):
 
         base_folder = prepare_folder(args, s)
 
+
         try:
+            import pdb; pdb.set_trace()
             with open(os.path.join(base_folder, '{}.map'.format(condition)), 'r') as input_file:
                 all_electrodes = [l.strip().split('\t')[1:] for l in input_file.readlines()][1:]
             if len(all_electrodes) > 1:
@@ -52,7 +55,7 @@ for s in tqdm(range(3, 17)):
 
                     true_values = [float(n) for n in electrode_time_points]
                     for t, true_value in enumerate(true_values):
-                        time_point = timepoint_converter[searchlight_converter[t]
+                        time_point = timepoint_converter[searchlight_converter[t]]
                         true_data[condition]['true'][time_point][elec_code].append(true_value)
 
                     for perm_index, perm in enumerate(permutations):
@@ -60,20 +63,22 @@ for s in tqdm(range(3, 17)):
                         if perm[relevant_index] < 1:
                             perm_values = [k*-1. for k in true_values]
                             for t, perm_value in enumerate(perm_values):
-                                time_point = timepoint_converter[searchlight_converter[t]
+                                time_point = timepoint_converter[searchlight_converter[t]]
                                 permuted_data[condition][perm_index+1][time_point][elec_code].append(perm_value)
 
         except FileNotFoundError:
             pass
+import pdb; pdb.set_trace()
 
-plot_time_point = timepoint_converter[searchlight_converter[time_point]]
 plot_path = re.sub('true$', '', prepare_folder(args, s).replace('rsa_maps', 'group_permutation_results'))
 os.makedirs(plot_path, exist_ok=True)
 
+print('Now computing the thresholds...')
 thresholds = collections.defaultdict(lambda : collections.defaultdict(list))
 
 for condition, condition_dict in permuted_data.items():
-    for perm_index, perm_dict in condition_dict.items():
+    print(condition)
+    for perm_index, perm_dict in tqdm(condition_dict.items()):
         for time_point, time_dict in perm_dict.items():
             perm_list = list()
             for elec_code, elec_list in time_point_dict.items():
@@ -83,6 +88,7 @@ for condition, condition_dict in permuted_data.items():
 
 results = collections.defaultdict(lambda : collections.defaultdict(lambda: collections.defaultdict(list)))
 
+print('Now computing the distributions...')
 for condition, condition_dict in true_data.items():
     for perm_index, perm_dict in condition_dict.items():
         for time_point, time_dict in perm_dict.items():
@@ -90,6 +96,8 @@ for condition, condition_dict in true_data.items():
                 elec_score = scipy.stats.ttest_1samp(eleclist, popmean=0.0)[0]
                 maximal_distribution = thresholds[condition][time_point]
                 p_value = 1.-(stats.percentileofscore(maximal_distribution, elec_score)/100.)
+                if p_value <= .05:
+                    print(time_point)
                 results[condition][elec_code][time_point] = p_value
 
 import pdb; pdb.set_trace()
