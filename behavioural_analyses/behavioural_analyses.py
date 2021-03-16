@@ -12,6 +12,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from scipy import stats
+from sklearn.metrics import roc_auc_score
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_folder', required=True, type=str, help='Path where to find the data')
@@ -36,16 +37,30 @@ both_performances_to_plot = collections.defaultdict(lambda : collections.default
 word_by_word = collections.defaultdict(lambda : collections.defaultdict(list))
 trial_by_trial = collections.defaultdict(list)
 
-with open(os.path.join(output_folder, 'behavioural_results.txt'), 'w') as o:
+### Reading the stimuli file in order to get the categories for the words so as to use them for the true positives/false positives
+with open('../lab_experiment/stimuli_final.csv') as i:
+    stimuli = [l.strip().split(';')[:2] for l in i.readlines()][1:]
+categories = {k[0] : k[1] for k in stimuli}
+mapping = {'animal' : 1, 'object' : 0}
+opposites = {'animal' : 'object', 'object' : 'animal'}
+
+### Starting with the analyses
+if 1 == 1:
+#with open(os.path.join(output_folder, 'behavioural_results.txt'), 'w') as o:
     #for root, direct, files in os.walk(base_folder):
         #if 'subject' in root and 'events' in root:
 
             #subject_number = int(re.sub('\D', '', re.sub('^.+/|_.+$', '', root)))
+    counter = collections.defaultdict(list)
     for subject_number in range(3, 18):
 
-        current_csv_path = os.path.join(args.data_folder, 'subject{}'.format(subject_number), 'sub-{:02}_events'.format(subject_number))
+        #current_csv_path = os.path.join(args.data_folder, 'subject{}'.format(subject_number), 'sub-{:02}_events'.format(subject_number))
+        current_csv_path = os.path.join(args.data_folder, 'sub-{:02}_events'.format(subject_number))
         results_counter = collections.defaultdict(int)
-        current_results = []
+  
+        current_results = list()
+        true_values = list()
+        predicted_values = list()
 
         for run in range(1, 33):
             current_file = pandas.read_csv(os.path.join(current_csv_path, 'run_{:02}_events_log.csv'.format(run)))
@@ -60,6 +75,13 @@ with open(os.path.join(output_folder, 'behavioural_results.txt'), 'w') as o:
                     accuracy = 1 if outcome == 'correct' else 0
                     certainty = current_file['Certainty'][index]
 
+                    cat = categories[word]
+                    true_values.append(cat)
+                    if accuracy == 1:
+                        predicted_values.append(cat)
+                    else:
+                        predicted_values.append(opposites[cat])
+
                     current_results.append((accuracy, certainty))
                     all_results.append((accuracy, certainty))
                     current_trial.append(accuracy)
@@ -67,6 +89,24 @@ with open(os.path.join(output_folder, 'behavioural_results.txt'), 'w') as o:
                     results_counter[outcome] += 1
             trial_by_trial[subject_number].append([numpy.nanmean(current_trial), numpy.nanstd(current_trial)])
 
+        print(subject_number)
+        split_analysis = dict()
+        split_analysis['unconscious'] = [i for i, k in enumerate(current_results) if k[1] == 1 or (k[1] == 2 and k[0] == 0)]
+        #split_analysis['semiconscious'] = [i for i, k in enumerate(current_results) if k[1] == 2]
+        split_analysis['conscious'] = [i for i, k in enumerate(current_results) if k[1] == 3 or (k[1] == 2 and k[0] == 1)]
+        for k, v in split_analysis.items():
+            auc = roc_auc_score([mapping[true_values[i]] for i in v], [mapping[predicted_values[i]] for i in v])
+            #correct_guesses = len([k for k in v if k==1]) / len(v)
+            #wrong_guesses = len([k for k in v if k==0]) / len(v)
+            #try:
+                #sensitivity = correct_guesses / wrong_guesses
+                #import pdb; pdb.set_trace()
+            #except ZeroDivisionError:
+                #sensitivity = 'no wrong guesses'
+            print('{}\tn={}\t{}'.format(k, len(v), auc))
+            counter[k].append(len(v))
+
+        '''
         ### Total guesses
         number_judgments = sum([v for k, v in results_counter.items()])
         percentage_right = round((results_counter['correct'] / number_judgments) * 100, 0)
@@ -233,3 +273,6 @@ ax.set_title('Average accuracy per trial for all subjects'.format(subject), pad=
 plt.savefig(os.path.join(output_folder, 'trial_by_trial_accuracies.png'))
 plt.clf()
 plt.close()
+'''
+for k, v in counter.items():
+    print('{}\t{}'.format(k, sum(v)))

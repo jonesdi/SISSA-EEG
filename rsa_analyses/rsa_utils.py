@@ -48,13 +48,25 @@ def restrict_evoked_responses(args, evoked_responses):
     for current_epoch_index in range(len(events)):
 
         current_event = events[current_epoch_index]
+        # 0 = word, 1 = target/filler, 2 = accuracy, 3 = awareness 
+        word = current_event[0]
+        accuracy = current_event[2]
+        awareness = current_event[3]
 
         ### Creating 2 conditions: correct/wrong
         if args.analysis == 'objective_accuracy':
-            restricted_evoked_responses[current_event[2]][current_event[0]].append(epochs[current_epoch_index])
+            restricted_evoked_responses[accuracy][word].append(epochs[current_epoch_index])
         ### Creating 3 conditions: 1/2/3
         elif args.analysis == 'subjective_judgments':
-            restricted_evoked_responses[current_event[3]][current_event[0]].append(epochs[current_epoch_index])
+            restricted_evoked_responses[awareness][word].append(epochs[current_epoch_index])
+        elif args.analysis == 'both_worlds':
+            if awareness == 'medium' and accuracy == 'correct':
+                awareness = 'aware'
+            elif awareness == 'medium' and accuracy == 'wrong':
+                awareness = 'unaware'
+            else:
+                awareness = 'aware' if awareness == 'high' else 'unaware'
+            restricted_evoked_responses[awareness][word].append(epochs[current_epoch_index])
 
     return restricted_evoked_responses
 

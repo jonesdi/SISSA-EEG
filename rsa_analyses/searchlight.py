@@ -12,6 +12,27 @@ class SearchlightClusters:
         self.max_distance = max_distance
         self.index_to_code = self.indices_to_codes()
         self.neighbors = self.read_searchlight_clusters()
+        self.mne_adjacency_matrix = self.create_adjacency_matrix()
+
+    def create_adjacency_matrix(self):
+        data = list()
+        indices = list()
+        index_pointer = [0]
+        for i, kv in enumerate(self.neighbors.items()):
+            v = kv[1][1:]
+            for neighbor in v:
+                indices.append(int(neighbor))
+                data.append(1)
+            index_pointer.append(len(indices))
+
+        ### Just checking everything went fine
+        mne_sparse_adj_matrix = scipy.sparse.csr_matrix((data, indices, index_pointer), dtype=int)
+        for ikv, kv in enumerate(self.neighbors.items()):
+            v = kv[1][1:]
+
+            assert [i for i, k in enumerate(mne_sparse_adj_matrix.toarray()[ikv]) if k == 1] == v
+
+        return mne_sparse_adj_matrix 
 
     def indices_to_codes(self):
 

@@ -31,7 +31,8 @@ all_events_ids = {Stimuli['word'][stim] : stim+10 for stim in trial_stimuli}
 main_folder = '/mnt/c/Users/andre/OneDrive - Queen Mary, University of London/conscious_unconscious_processing'
 
 #for s in tqdm(range(3, 18)):
-for s in tqdm(range(12, 18)):
+#for s in tqdm(range(12, 18)):
+for s in [2]:
 
     raws_list = list()
     epochs_list = list()
@@ -45,6 +46,9 @@ for s in tqdm(range(12, 18)):
     os.makedirs(os.path.join(main_folder, output_folder), exist_ok=True)
 
     for r in range (1, 33):
+        ### Small fix for subject 2
+        if s == 2:
+            r = r - 1
 
         raw_raw = mne.io.read_raw_bdf(os.path.join(main_folder, eeg_folder, 'Testdata{}.bdf'.format(r)), preload=True, eog=eog_channels, exclude=excluded_channels)
         raw_raw.set_montage(montage)
@@ -54,7 +58,11 @@ for s in tqdm(range(12, 18)):
         cropped_raw = raw_raw.crop(tmin=max((current_events[0][0]/sampling)-0.5, 0), tmax=(current_events[-1][0]/sampling)+1.5)
 
         events_raw = pandas.read_csv(os.path.join(main_folder, events_folder, 'run_{:02}_events_log.csv'.format(r)))
-        events_info = [(events_raw['Word'][index], events_raw['Group'][index], events_raw['Trigger code'][index], events_raw['Prediction outcome'][index], events_raw['Certainty'][index]) for index in range(20)]
+        ### Small fix for subject 2
+        if r == 2:
+            events_info = [(events_raw['Word'][index], events_raw['Group'][index], events_raw['Trigger code'][index], events_raw['Prediction outcome'][index], events_raw['Certainty'][index]) for index in range(20)]
+        else:
+            events_info = [(events_raw['Word'][index], events_raw['Group'][index], events_raw['Trigger code'][index]+10, events_raw['Prediction outcome'][index], events_raw['Certainty'][index]) for index in range(20)]
         original_events_list.extend(events_info)
         events_list.append(current_events)
         raws_list.append(cropped_raw)

@@ -5,6 +5,8 @@ import numpy
 import re
 import logging
 import itertools
+import functools
+import mne
 import pickle
 import scipy
 import multiprocessing
@@ -53,23 +55,26 @@ elif args.analysis == 'subjective_judgments':
     conditions = ['low', 'medium', 'high']
 
 electrode_index_to_code = SearchlightClusters().index_to_code
+mne_adj_matrix = SearchlightClusters().mne_adjacency_matrix
 timepoint_converter = EvokedResponses(3).time_points
 if args.searchlight:
     searchlight_converter = {i : v for i, v in enumerate([t for t in range(0, len(timepoint_converter), 2)])}
+chosen_timepoints = [k for k, v in searchlight_converter.items() if timepoint_converter[v] >= .0 and timepoint_converter[v] <.7]
 
 final_plot = collections.defaultdict(list)
 true_data = collections.defaultdict(lambda: collections.defaultdict(lambda : collections.defaultdict(list)))
 
 
+'''
 logging.info('Now loading the data and permuting it...')
 
 for s in tqdm(range(3, 17)):
     ### Collecting the true results
 
+    
     for condition in conditions:
-
+        
         base_folder = prepare_folder(args, s)
-
 
         try:
             with open(os.path.join(base_folder, '{}.map'.format(condition)), 'r') as input_file:
@@ -83,8 +88,47 @@ for s in tqdm(range(3, 17)):
                         time_point = timepoint_converter[searchlight_converter[t]]
                         true_data[condition][time_point][elec_code].append(true_value)
 
+
         except FileNotFoundError:
             pass
+'''
+
+### Matrix for MNE
+
+dict_for_mne = dict()
+
+for condition in conditions:
+    
+
+    condition_list = list()
+
+    for s in tqdm(range(3, 17)):
+        ### Collecting the true results
+        base_folder = prepare_folder(args, s)
+        sub_list = list()    
+
+        try:
+            with open(os.path.join(base_folder, '{}.map'.format(condition)), 'r') as input_file:
+                all_electrodes = [l.strip().split('\t')[1:] for l in input_file.readlines()][1:]
+            if len(all_electrodes) > 1:
+                #max_time_index = len(all_electrodes[0])
+                #for t in range(max_time_index):
+                for t in chosen_timepoints:
+                    t_list = [float(elec[t]) for elec in all_electrodes]
+                    sub_list.append(t_list)
+        except FileNotFoundError:
+            pass
+
+        condition_list.append(sub_list)
+    condition_array = numpy.array(condition_list)
+    #res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, max_step=5, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1)
+    res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1)
+    ps = [(i, k) for i, k in enumerate(res[2])]
+    highest_p = [k for k in sorted(ps, key=lambda item: item[1]) if k[1] <= .1]
+    times = [res[1][i[0]][0][0] for i in highest_p]
+    places= [res[1][i[0]][1][0] for i in highest_p]
+    import pdb; pdb.set_trace()
+'''
 
 plot_path = re.sub('true$', '', prepare_folder(args, s).replace('rsa_maps', 'group_permutation_results'))
 os.makedirs(plot_path, exist_ok=True)
@@ -119,14 +163,22 @@ for res in results_collector:
     for condition, perm_max in res.items():
         perm_dict[condition].extend([perm_max])
 
+'''
+
 logging.info('Now running the analyses...')
-results = collections.defaultdict(lambda : collections.defaultdict(list))
+results = collections.defaultdict(lambda : collections.defaultdict(lambda: collections.defaultdict(float)))
 for condition, condition_dict in true_data.items():
-    maximal_distribution = perm_dict[condition]
+    fdr = list()
+    #maximal_distribution = perm_dict[condition]
     for time_point, time_dict in condition_dict.items():
         for elec_code, elec_list in time_dict.items():
-            elec_score = scipy.stats.ttest_1samp(elec_list, popmean=0.0, nan_policy='omit')[0]
-            p_value = 1.-(stats.percentileofscore(maximal_distribution, elec_score)/100.)
-            if p_value/2 <= .05:
-                print([elec_code, time_point])
-            results[condition][elec_code][time_point] = p_value
+            #elec_score = scipy.stats.ttest_1samp(elec_list, alternative='greater', popmean=0.0, nan_policy='omit')[1]
+            elec_score = scipy.stats.ttest_1samp(elec_list, alternative='greater', popmean=0.0)[1]
+            #p_value = 1.-(stats.percentileofscore(maximal_distribution, elec_score)/100.)
+            #if p_value/2 <= .05:
+                #print([elec_code, time_point])
+            #results[condition][elec_code][time_point] = p_value
+            fdr.append((elec_score, (elec_code, time_point)))
+    res = mne.stats.fdr_correction([k[0] for k in fdr])
+    sig = [k for k in res[0] if str(k) != 'False']
+    import pdb; pdb.set_trace()
