@@ -24,6 +24,7 @@ class ComputationalModels:
         self.ppmi = self.get_new_cooc(mode='ppmi')
         self.new_cooc = self.get_new_cooc()
         self.wordnet = self.get_wordnet()
+        self.orthography = self.get_orthography()
         assert {k : '' for k in self.w2v.keys()} == {k : '' for k in self.original_cooc.keys()}
 
     def read_stimuli(self):
@@ -34,6 +35,21 @@ class ComputationalModels:
                     l = l.strip().split(';')
                     stimuli.append(l[0])
         return stimuli
+
+    def get_orthography(self):
+
+        orthography_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
+        with open(os.path.join('computational_models', 'orthography', 'orthography.sims'), 'r') as orthography_original_file:
+            for i, l in enumerate(orthography_original_file):
+                l = l.strip().split('\t')
+                if l[0] in self.words and l[1] in self.words:
+                    orthography_original_similarities[l[0]][l[1]] = float(l[2])
+                    orthography_original_similarities[l[1]][l[0]] = float(l[2])
+
+        # Turning defaultdict into a regular dict
+        orthography_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in orthography_original_similarities.items()}
+
+        return orthography_original_similarities
 
     def get_wordnet(self):
 
@@ -114,6 +130,7 @@ class ComputationalModels:
         models['wordnet'] = self.get_wordnet()
         models['new_cooc'] = self.get_new_cooc()
         models['ppmi'] = self.get_new_cooc(mode='ppmi')
+        models['orthography'] = self.get_orthography()
         #models['w2v_window_cooc'] = self.get_new_cooc(mode='w2v_style')
 
         for m_name, m in models.items():
