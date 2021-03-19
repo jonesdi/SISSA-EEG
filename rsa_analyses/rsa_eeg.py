@@ -16,7 +16,9 @@ parser.add_argument('--permutation', action='store_true', default=False, help='I
 parser.add_argument('--searchlight', action='store_true', default=False, help='Indicates whether to run a searchlight analysis or not')
 parser.add_argument('--analysis', default='both_worlds', choices=['objective_accuracy', 'subjective_judgments', 'both_worlds'], help='Indicates which pairwise similarities to compare, whether by considering objective accuracy or subjective judgments')
 parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'targets_only'], help='Indicates whether to use for the analyses only the targets or all the words')
-parser.add_argument('--computational_model', default='w2v', choices=['w2v', 'original_cooc'], help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--computational_model', default='w2v', choices=['w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--hop', default=2, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--temporal_window_size', default=4, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 args = parser.parse_args()
 
 ### RSA
@@ -28,6 +30,12 @@ if __name__ == '__main__':
         computational_model = ComputationalModels().w2v
     elif args.computational_model == 'original_cooc':
         computational_model = ComputationalModels().original_cooc
+    elif args.computational_model == 'new_cooc':
+        computational_model = ComputationalModels().new_cooc
+    elif args.computational_model == 'ppmi':
+        computational_model = ComputationalModels().ppmi
+    elif args.computational_model == 'wordnet':
+        computational_model = ComputationalModels().wordnet
 
     #rsa_per_subject(args, 3, computational_model)
     if args.permutation:
@@ -46,8 +54,8 @@ if __name__ == '__main__':
 
 
         #for s in range(6, 17): 
-        #for s in range(13, 17): 
-        for s in [3]: 
+        for s in range(2, 17): 
+        #for s in [2]: 
 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
@@ -68,8 +76,8 @@ if __name__ == '__main__':
     else:
         processes = list()
 
-        for s in range(3, 17): 
-        #for s in [3]: 
+        for s in range(2, 17): 
+        #for s in [2]: 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
 

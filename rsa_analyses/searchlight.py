@@ -57,12 +57,10 @@ class SearchlightClusters:
 
         return searchlight_clusters
 
-def run_searchlight(evoked_dict, word_combs, computational_scores, time_points): 
+def run_searchlight(evoked_dict, word_combs, computational_scores, time_points, temporal_window_size): 
 
     ### Loading the searchlight clusters
     searchlight_clusters = SearchlightClusters()
-
-    temporal_window_size = 4
 
     current_condition_rho = collections.defaultdict(list)
 

@@ -99,7 +99,12 @@ def prepare_folder(args, s, permutation=0):
     computational_model = args.computational_model
     permutation = 'permutation_{:03}'.format(permutation) if permutation != 0 else 'true'
 
-    folder_path = os.path.join('rsa_maps', brain_approach, \
+    if args.searchlight:
+        searchlight_params = 'window_{}_hop_{}'.format(args.temporal_window_size, args.hop)
+    else:
+        searchlight_params = ''
+
+    folder_path = os.path.join('rsa_maps', brain_approach, searchlight_params, \
                                 analysis, words, \
                                 computational_model, \
                                 'sub-{:02}'.format(s), permutation)
@@ -118,7 +123,6 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points, per
 
     subject_results = collections.defaultdict(dict)
     subject_info = collections.defaultdict(lambda : collections.defaultdict(list))
-    hop = 2
 
     for condition, evoked_dict in selected_evoked.items():
 
@@ -144,8 +148,9 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points, per
 
         ### Differentiating among searchlight and full-cap RSA
         if args.searchlight:
-            time_points = [t for t in range(0, len(all_time_points), hop)]
-            current_condition_rho = run_searchlight(evoked_dict, word_combs, computational_scores, time_points) 
+            time_points = [t for t in range(0, len(all_time_points), args.hop)]
+            print(len(time_points))
+            current_condition_rho = run_searchlight(evoked_dict, word_combs, computational_scores, time_points, args.temporal_window_size) 
         else:
             time_points = [k for k in all_time_points.keys()]
             current_condition_rho = run_all_electrodes_rsa(evoked_dict, word_combs, computational_scores, time_points) 
