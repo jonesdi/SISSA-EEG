@@ -75,11 +75,13 @@ if args.computational_model != 'wordnet':
         sims = dict()
         for word_one, word_two in word_combs:
             current_sim = levenshtein(word_one, word_two)
-            sims[(word_one, word_two)] = current_sim
+            sims[(word_one, word_two)] = -current_sim
 
         #l2_norm = math.sqrt(sum([v*v for k, v in sims.items()]))
-        l1_norm = sum([v for k, v in sims.items()])
-        normalized_sims = {k : (float(v)/l1_norm) for k, v in sims.items()}
+        #l1_norm = sum([-v for k, v in sims.items()])
+        std = numpy.nanstd([v for k, v in sims.items()])
+        mean = numpy.nanmean([v for k, v in sims.items()])
+        normalized_sims = {k : ((float(v)-mean)/std) for k, v in sims.items()}
         
         with open(os.path.join(output_folder, 'orthography.sims'), 'w') as o:
             for word_tuple, sim in normalized_sims.items():

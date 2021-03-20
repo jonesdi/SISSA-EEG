@@ -16,7 +16,7 @@ parser.add_argument('--permutation', action='store_true', default=False, help='I
 parser.add_argument('--searchlight', action='store_true', default=False, help='Indicates whether to run a searchlight analysis or not')
 parser.add_argument('--analysis', default='both_worlds', choices=['objective_accuracy', 'subjective_judgments', 'both_worlds'], help='Indicates which pairwise similarities to compare, whether by considering objective accuracy or subjective judgments')
 parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'targets_only'], help='Indicates whether to use for the analyses only the targets or all the words')
-parser.add_argument('--computational_model', default='w2v', choices=['orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--computational_model', default='w2v', choices=['visual', 'orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
 parser.add_argument('--hop', default=2, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 parser.add_argument('--temporal_window_size', default=4, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 args = parser.parse_args()
@@ -38,6 +38,8 @@ if __name__ == '__main__':
         computational_model = ComputationalModels().wordnet
     elif args.computational_model == 'orthography':
         computational_model = ComputationalModels().orthography
+    elif args.computational_model == 'visual':
+        computational_model = ComputationalModels().visual
 
     #rsa_per_subject(args, 3, computational_model)
     if args.permutation:
