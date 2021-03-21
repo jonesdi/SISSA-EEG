@@ -24,7 +24,7 @@ for w in words:
     right = left + width
     top = bottom + height
     ax = plt.gca()
-    p = plt.Rectangle((left, bottom), width, height, alpha=1., fill=False)
+    p = plt.Rectangle((left, bottom), width, height, alpha=0., fill=False)
     p.set_transform(ax.transAxes)
     p.set_clip_on(False)
     ax.add_patch(p)
@@ -36,6 +36,7 @@ for w in words:
 
     plt.axis('off')
     plt.savefig('stimuli_images/{}.png'.format(w))
+    plt.clf()
     im = image.imread('stimuli_images/{}.png'.format(w))
     word_dict[w] = im
 

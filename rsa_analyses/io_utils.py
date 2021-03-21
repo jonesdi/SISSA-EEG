@@ -26,6 +26,7 @@ class ComputationalModels:
         self.wordnet = self.get_wordnet()
         self.orthography = self.get_orthography()
         self.visual = self.get_visual()
+        self.CORnet = self.get_CORnet()
         assert {k : '' for k in self.w2v.keys()} == {k : '' for k in self.original_cooc.keys()}
 
     def read_stimuli(self):
@@ -51,6 +52,22 @@ class ComputationalModels:
         orthography_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in orthography_original_similarities.items()}
 
         return orthography_original_similarities
+
+    def get_CORnet(self):
+
+        visual_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
+        with open(os.path.join('computational_models', 'CORnet', 'CORnet.sims'), 'r') as visual_original_file:
+            for i, l in enumerate(visual_original_file):
+                if i > 0:
+                    l = l.strip().split('\t')
+                    if l[0] in self.words and l[1] in self.words:
+                        visual_original_similarities[l[0]][l[1]] = float(l[2])
+                        visual_original_similarities[l[1]][l[0]] = float(l[2])
+
+        # Turning defaultdict into a regular dict
+        visual_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in visual_original_similarities.items()}
+
+        return visual_original_similarities
 
     def get_visual(self):
 
@@ -148,6 +165,8 @@ class ComputationalModels:
         models['new_cooc'] = self.get_new_cooc()
         models['ppmi'] = self.get_new_cooc(mode='ppmi')
         models['orthography'] = self.get_orthography()
+        models['visual'] = self.get_visual()
+        models['CORnet'] = self.get_CORnet()
         #models['w2v_window_cooc'] = self.get_new_cooc(mode='w2v_style')
 
         for m_name, m in models.items():
