@@ -271,9 +271,10 @@ class EvokedResponses:
                 time_points[i] = -0.2
             else:
                 current_time = time_points[i-1] + time_step
-                if current_time <= 1.1:
+                if current_time < 1. :
                     time_points[i] = current_time
                 else:
                     break
+        assert 0. not in [v for k, v in time_points.items()]
         return time_points
 
