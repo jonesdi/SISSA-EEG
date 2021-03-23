@@ -18,7 +18,7 @@ class ComputationalModels:
 
     def __init__(self):
 
-        self.words = self.read_stimuli()
+        self.words, self.categories = self.read_stimuli()
         self.w2v = self.get_w2v_sims()
         self.original_cooc = self.get_original_cooc()
         self.ppmi = self.get_new_cooc(mode='ppmi')
@@ -30,13 +30,17 @@ class ComputationalModels:
         assert {k : '' for k in self.w2v.keys()} == {k : '' for k in self.original_cooc.keys()}
 
     def read_stimuli(self):
+        
+        categories = dict()
         stimuli = list()
         with open('../lab_experiment/stimuli_final.csv', 'r') as stimuli_file:
             for i, l in enumerate(stimuli_file):
                 if i > 0: 
                     l = l.strip().split(';')
                     stimuli.append(l[0])
-        return stimuli
+                    categories[l[0]] = l[1]
+
+        return stimuli, categories
 
     def get_orthography(self):
 
@@ -77,8 +81,8 @@ class ComputationalModels:
                 if i > 0:
                     l = l.strip().split('\t')
                     if l[0] in self.words and l[1] in self.words:
-                        visual_original_similarities[l[0]][l[1]] = float(l[3])
-                        visual_original_similarities[l[1]][l[0]] = float(l[3])
+                        visual_original_similarities[l[0]][l[1]] = float(l[2])
+                        visual_original_similarities[l[1]][l[0]] = float(l[2])
 
         # Turning defaultdict into a regular dict
         visual_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in visual_original_similarities.items()}
@@ -203,7 +207,7 @@ class ComputationalModels:
             ax.legend()
 
             pyplot.tick_params(axis='both', which='both', bottom='off', top='off', labelbottom='off', right='off', left='off', labelleft='off')
-            pyplot.savefig(os.path.join(out_folder, 'tsne_computational_models_comparison'), format='png', bbox_inches='tight', dpi=300)
+            pyplot.savefig(os.path.join(out_folder, 'tsne_computational_models_comparison.png'), format='png', bbox_inches='tight', dpi=300)
 
             ### Confusion matrix
             labels = [k for k in models.keys()]
@@ -249,6 +253,7 @@ class EvokedResponses:
     def read_original_epochs(self):
 
         epochs = mne.read_epochs(os.path.join(self.folder, 'sub-{:02}_highpass-100Hz-epoched-concatenated.fif'.format(self.subject_number)))
+        epochs.drop_channels('Status')
         epochs = epochs.get_data()
         feature_standardizer = mne.decoding.Scaler(scalings='mean')
         epochs = feature_standardizer.fit_transform(epochs)

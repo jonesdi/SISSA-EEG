@@ -7,6 +7,7 @@ import argparse
 import nltk
 import numpy
 import math
+import re
 
 from tqdm import tqdm
 from nltk.corpus import wordnet
@@ -38,7 +39,7 @@ def levenshtein(seq1, seq2):
     #print (matrix)
     return (matrix[size_x - 1, size_y - 1])
 parser = argparse.ArgumentParser()
-parser.add_argument('--computational_model', choices=['w2v', 'wordnet', 'orthography'], required=True, help='Indicates for which model to extract the similarities')
+parser.add_argument('--computational_model', choices=['simlex-999', 'w2v', 'wordnet', 'orthography'], required=True, help='Indicates for which model to extract the similarities')
 args = parser.parse_args()
 
 ### Housekeeping
@@ -50,7 +51,8 @@ os.makedirs(output_folder, exist_ok=True)
 
 words = []
 
-if args.computational_model != 'wordnet':
+#if args.computational_model != 'wordnet':
+if 1 != 1:
 
     with open('../lab_experiment/stimuli_final.csv', 'r') as f:
         for index, l in enumerate(f):
@@ -87,7 +89,8 @@ if args.computational_model != 'wordnet':
             for word_tuple, sim in normalized_sims.items():
                 o.write('{}\t{}\t{}\n'.format(word_tuple[0], word_tuple[1], sim))
 
-elif args.computational_model == 'wordnet':
+#elif args.computational_model == 'wordnet' or args.computational_model == 'simlex-999':
+elif args.computational_model == 'simlex-999':
 
     eng_to_it = dict()
 
@@ -104,8 +107,37 @@ elif args.computational_model == 'wordnet':
                 words.append(word)
                 eng_to_it[word] = l[0] 
 
-    synsets = {w : wordnet.synset(w) for w in words}
     word_combs = [k for k in itertools.combinations(words, r=2)]
+
+    if args.computational_model == 'simlex-999':
+
+        simlex_dict = dict()
+        with open('../../../casa_nuova/lib/python3.8/site-packages/gensim/test/test_data/simlex999.txt') as i:
+            simlex999 = [l.strip().split('\t') for l in i.readlines()][2:]
+        for l in simlex999:
+            simlex_dict[(l[0], l[1])] = float(l[2])
+            simlex_dict[(l[1], l[0])] = float(l[2])
+
+        counter = list()
+        output_dict = dict()
+        for c in word_combs:
+            if isinstance(c, tuple):
+                c = tuple([re.sub('\...+', '', w) for w in c])
+                if isinstance(c, tuple):
+                   
+                    if c not in simlex_dict.keys():
+                        counter.append(c)
+                    else:
+                        try:
+                            output_dict[c] = simlex_dict[c]
+                        except IndexError:
+                            output_dict[c] = simlex_dict[(c[1], c[0])]
+
+        #assert len(counter) == 0
+ 
+        import pdb; pdb.set_trace()
+
+    synsets = {w : wordnet.synset(w) for w in words}
 
     with open(os.path.join(output_folder, 'wordnet.sims'), 'w') as o:
         for w in word_combs:
