@@ -10,14 +10,15 @@ import mne
 import pickle
 import scipy
 import multiprocessing
+
 from scipy import stats
+from matplotlib import pyplot
+from tqdm import tqdm
 
 from searchlight import SearchlightClusters
 from io_utils import EvokedResponses
 from plot_utils import plot_two, plot_three, confusion_matrix
 from rsa_utils import prepare_folder
-
-from tqdm import tqdm
 
 def run_sign_perm(input_tuple):
 
@@ -46,10 +47,10 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--searchlight', action='store_true', default=True, help='Indicates whether to run a searchlight analysis or not')
 parser.add_argument('--analysis', default='both_worlds', choices=['objective_accuracy', 'subjective_judgments', 'both_worlds'], help='Indicates which pairwise similarities to compare, whether by considering objective accuracy or subjective judgments')
 parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'targets_only'], help='Indicates whether to use for the analyses only the targets or all the words')
-parser.add_argument('--computational_model', default='original_cooc', choices=['CORnet', 'visual', 'orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--computational_model', default='w2v', choices=['CORnet', 'visual', 'orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
 parser.add_argument('--comparisons_correction', default='cluster_tfce', choices=['fdr', 'cluster', 'cluster_tfce', 'maximal_permutation'], help='Indicates which multiple comparisons correction approach to use')
-parser.add_argument('--hop', default=2, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
-parser.add_argument('--temporal_window_size', default=4, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--hop', default=3, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--temporal_window_size', default=7, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 args = parser.parse_args()
 
 if args.analysis == 'objective_accuracy':
@@ -105,7 +106,7 @@ if 'cluster' in args.comparisons_correction:
         if args.comparisons_correction == 'cluster':
             res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, max_step=1, n_jobs=os.cpu_count()-1)
         if args.comparisons_correction == 'cluster_tfce':
-            res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1)
+            res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1, n_permutations=2048)
         ps = [(i, k) for i, k in enumerate(res[2])]
         highest_p = [k for k in sorted(ps, key=lambda item: item[1]) if k[1] <= .05]
         times = [res[1][i[0]][0][0] for i in highest_p]
@@ -121,6 +122,20 @@ if 'cluster' in args.comparisons_correction:
                 original_rho = condition_array[s, original_t, place]
                 index_rhos.append(original_rho)
             readable_rhos.append(index_rhos)
+
+        ### Plotting the results
+
+        significant_points = res[2].reshape(res[0].shape).T
+        significant_points[significant_points>=0.05] = 0.
+        tmin=timepoint_converter[searchlight_converter[chosen_timepoints[0]]]
+        info = mne.create_info(ch_names=[v for k, v in SearchlightClusters().index_to_code.items()], sfreq=204.8/3, ch_types='eeg')
+        evoked = mne.EvokedArray(significant_points, info=info,tmin=tmin)
+        
+        montage=mne.channels.make_standard_montage('biosemi128')
+        evoked.set_montage(montage)
+
+        evoked.plot_topomap(ch_type='eeg', time_unit='s', times=evoked.times, units='p-value', ncols=12, nrows='auto')
+        pyplot.savefig('prova.png', dpi=600)
         import pdb; pdb.set_trace()
 
 else:
