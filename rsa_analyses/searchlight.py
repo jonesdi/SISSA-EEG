@@ -37,7 +37,7 @@ class SearchlightClusters:
     def indices_to_codes(self):
 
         index_to_code = collections.defaultdict(str)
-        with open('searchlight_clusters_{}mm.txt'.format(self.max_distance), 'r') as searchlight_file:
+        with open('../rsa_analyses/searchlight_clusters_{}mm.txt'.format(self.max_distance), 'r') as searchlight_file:
             for l in searchlight_file:
                 if 'CE' not in l:
                     l = l.strip().split('\t')
@@ -49,7 +49,7 @@ class SearchlightClusters:
 
         searchlight_clusters = collections.defaultdict(list)
 
-        with open('searchlight_clusters_{}mm.txt'.format(self.max_distance), 'r') as searchlight_file:
+        with open('../rsa_analyses/searchlight_clusters_{}mm.txt'.format(self.max_distance), 'r') as searchlight_file:
             for l in searchlight_file:
                 if 'CE' not in l:
                     l = [int(i) for i in l.strip().split('\t')[1:]]

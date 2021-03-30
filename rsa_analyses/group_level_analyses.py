@@ -47,7 +47,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--searchlight', action='store_true', default=True, help='Indicates whether to run a searchlight analysis or not')
 parser.add_argument('--analysis', default='both_worlds', choices=['objective_accuracy', 'subjective_judgments', 'both_worlds'], help='Indicates which pairwise similarities to compare, whether by considering objective accuracy or subjective judgments')
 parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'targets_only'], help='Indicates whether to use for the analyses only the targets or all the words')
-parser.add_argument('--computational_model', default='w2v', choices=['CORnet', 'visual', 'orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--computational_model', default='w2v', choices=['cslb', 'CORnet', 'visual', 'orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
 parser.add_argument('--comparisons_correction', default='cluster_tfce', choices=['fdr', 'cluster', 'cluster_tfce', 'maximal_permutation'], help='Indicates which multiple comparisons correction approach to use')
 parser.add_argument('--hop', default=3, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 parser.add_argument('--temporal_window_size', default=7, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
@@ -67,18 +67,16 @@ if args.searchlight:
     searchlight_converter = {i : v for i, v in enumerate([t for t in range(0, len(timepoint_converter), args.hop)])}
 chosen_timepoints = [k for k, v in searchlight_converter.items() if timepoint_converter[v]>=-.2 and timepoint_converter[v]<1.]
 
+plot_path = os.path.join('group_level_plots', args.computational_model, args.word_selection)
+os.makedirs(plot_path, exist_ok=True)
+
 final_plot = collections.defaultdict(list)
 true_data = collections.defaultdict(lambda: collections.defaultdict(lambda : collections.defaultdict(list)))
 
 
 if 'cluster' in args.comparisons_correction:
 
-    ### Matrix for MNE
-
-    dict_for_mne = dict()
-
     for condition in conditions:
-        
 
         condition_list = list()
 
@@ -106,7 +104,7 @@ if 'cluster' in args.comparisons_correction:
         if args.comparisons_correction == 'cluster':
             res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, max_step=1, n_jobs=os.cpu_count()-1)
         if args.comparisons_correction == 'cluster_tfce':
-            res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1, n_permutations=2048)
+            res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1, n_permutations='all')
         ps = [(i, k) for i, k in enumerate(res[2])]
         highest_p = [k for k in sorted(ps, key=lambda item: item[1]) if k[1] <= .05]
         times = [res[1][i[0]][0][0] for i in highest_p]
@@ -126,7 +124,10 @@ if 'cluster' in args.comparisons_correction:
         ### Plotting the results
 
         significant_points = res[2].reshape(res[0].shape).T
-        significant_points[significant_points>=0.05] = 0.
+        significant_points = -numpy.log(significant_points)
+        significant_points[significant_points<=-numpy.log(0.05)] = 0.0
+
+        time_indices=[i[0] for i in enumerate(numpy.nansum(significant_points.T, axis=1)>0.) if i[1]==True]
         tmin=timepoint_converter[searchlight_converter[chosen_timepoints[0]]]
         info = mne.create_info(ch_names=[v for k, v in SearchlightClusters().index_to_code.items()], sfreq=204.8/3, ch_types='eeg')
         evoked = mne.EvokedArray(significant_points, info=info,tmin=tmin)
@@ -134,9 +135,21 @@ if 'cluster' in args.comparisons_correction:
         montage=mne.channels.make_standard_montage('biosemi128')
         evoked.set_montage(montage)
 
-        evoked.plot_topomap(ch_type='eeg', time_unit='s', times=evoked.times, units='p-value', ncols=12, nrows='auto')
-        pyplot.savefig('prova.png', dpi=600)
-        import pdb; pdb.set_trace()
+        for i in range(2):
+
+            mode = 'all' if i==0 else 'significant'
+
+            title='{} time points for model: {} - Condition: {}'.format(mode.capitalize(), args.computational_model, condition)
+
+            if mode == 'significant':
+                if len(time_indices) >= 1:
+                    evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[evoked.times[i] for i in time_indices], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
+            else:
+                
+                evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[i for i in evoked.times], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
+
+            pyplot.savefig(os.path.join(plot_path, '{}_{}_{}.png'.format(args.computational_model, mode, args.computational_model, condition)), dpi=600)
+            pyplot.clf()
 
 else:
 

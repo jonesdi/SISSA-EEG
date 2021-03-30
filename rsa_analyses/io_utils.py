@@ -27,6 +27,7 @@ class ComputationalModels:
         self.orthography = self.get_orthography()
         self.visual = self.get_visual()
         self.CORnet = self.get_CORnet()
+        self.cslb = self.get_cslb()
         assert {k : '' for k in self.w2v.keys()} == {k : '' for k in self.original_cooc.keys()}
 
     def read_stimuli(self):
@@ -42,10 +43,25 @@ class ComputationalModels:
 
         return stimuli, categories
 
+    def get_cslb(self):
+
+        orthography_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
+        with open(os.path.join('..', 'computational_models', 'cslb', 'cslb.sims'), 'r') as orthography_original_file:
+            for i, l in enumerate(orthography_original_file):
+                l = l.strip().split('\t')
+                if l[0] in self.words and l[1] in self.words:
+                    orthography_original_similarities[l[0]][l[1]] = float(l[2])
+                    orthography_original_similarities[l[1]][l[0]] = float(l[2])
+
+        # Turning defaultdict into a regular dict
+        orthography_original_similarities = {k_one : {k_two : v_two for k_two, v_two in v_one.items()} for k_one, v_one in orthography_original_similarities.items()}
+
+        return orthography_original_similarities
+
     def get_orthography(self):
 
         orthography_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
-        with open(os.path.join('computational_models', 'orthography', 'orthography.sims'), 'r') as orthography_original_file:
+        with open(os.path.join('..', 'computational_models', 'orthography', 'orthography.sims'), 'r') as orthography_original_file:
             for i, l in enumerate(orthography_original_file):
                 l = l.strip().split('\t')
                 if l[0] in self.words and l[1] in self.words:
@@ -60,7 +76,7 @@ class ComputationalModels:
     def get_CORnet(self):
 
         visual_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
-        with open(os.path.join('computational_models', 'CORnet', 'CORnet.sims'), 'r') as visual_original_file:
+        with open(os.path.join('..', 'computational_models', 'CORnet', 'CORnet.sims'), 'r') as visual_original_file:
             for i, l in enumerate(visual_original_file):
                 if i > 0:
                     l = l.strip().split('\t')
@@ -76,7 +92,7 @@ class ComputationalModels:
     def get_visual(self):
 
         visual_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
-        with open(os.path.join('computational_models', 'visual', 'visual.sims'), 'r') as visual_original_file:
+        with open(os.path.join('..', 'computational_models', 'visual', 'visual.sims'), 'r') as visual_original_file:
             for i, l in enumerate(visual_original_file):
                 if i > 0:
                     l = l.strip().split('\t')
@@ -92,7 +108,7 @@ class ComputationalModels:
     def get_wordnet(self):
 
         wordnet_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
-        with open(os.path.join('computational_models', 'wordnet', 'wordnet.sims'), 'r') as wordnet_original_file:
+        with open(os.path.join('..', 'computational_models', 'wordnet', 'wordnet.sims'), 'r') as wordnet_original_file:
             for i, l in enumerate(wordnet_original_file):
                 l = l.strip().split('\t')
                 if l[0] in self.words and l[1] in self.words:
@@ -107,7 +123,7 @@ class ComputationalModels:
     def get_w2v_sims(self):
 
         w2v_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
-        with open(os.path.join('computational_models', 'w2v', 'w2v_max_vocab_150000.sims'), 'r') as w2v_file:
+        with open(os.path.join('..', 'computational_models', 'w2v', 'w2v_max_vocab_150000.sims'), 'r') as w2v_file:
             for l in (w2v_file):
                 l = l.strip().split('\t')
                 if l[0] in self.words and l[1] in self.words:
@@ -122,7 +138,7 @@ class ComputationalModels:
     def get_original_cooc(self):
 
         cooc_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
-        with open(os.path.join('computational_models', 'cooc', 'cooc_original.csv'), 'r') as cooc_original_file:
+        with open(os.path.join('..', 'computational_models', 'cooc', 'cooc_original.csv'), 'r') as cooc_original_file:
             for i, l in enumerate(cooc_original_file):
                 if i > 0: 
                     l = l.strip().split(';')
@@ -140,7 +156,7 @@ class ComputationalModels:
         cooc_original_similarities = collections.defaultdict(lambda : collections.defaultdict(float))
         mode_indices = {'basic_cooc' : 1, 'ppmi' : 3, 'w2v_style' : 5}
 
-        base_folder = os.path.join('computational_models', 'cooc', 'new_cooc')
+        base_folder = os.path.join('..', 'computational_models', 'cooc', 'new_cooc')
         for w in self.words:
             with open(os.path.join(base_folder, '{}.cooc'.format(w))) as w_file:
                 lines = [l.strip().split('\t') for l in w_file.readlines()]
@@ -168,6 +184,7 @@ class ComputationalModels:
         models['wordnet'] = self.get_wordnet()
         models['new_cooc'] = self.get_new_cooc()
         models['ppmi'] = self.get_new_cooc(mode='ppmi')
+        models['cslb'] = self.get_cslb()
         models['orthography'] = self.get_orthography()
         models['visual'] = self.get_visual()
         models['CORnet'] = self.get_CORnet()
@@ -175,7 +192,10 @@ class ComputationalModels:
 
         for m_name, m in models.items():
             for w_one, w_two in words:
-                sim_models[m_name].append(m[w_one][w_two])
+                try: 
+                    sim_models[m_name].append(m[w_one][w_two])
+                except KeyError:
+                    import pdb; pdb.set_trace()
         
         combs = itertools.combinations([k for k in models.keys()], 2)
         for m_one, m_two in combs:

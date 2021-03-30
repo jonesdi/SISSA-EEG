@@ -39,12 +39,12 @@ def levenshtein(seq1, seq2):
     #print (matrix)
     return (matrix[size_x - 1, size_y - 1])
 parser = argparse.ArgumentParser()
-parser.add_argument('--computational_model', choices=['simlex-999', 'w2v', 'wordnet', 'orthography'], required=True, help='Indicates for which model to extract the similarities')
+parser.add_argument('--computational_model', choices=['cslb', 'simlex-999', 'w2v', 'wordnet', 'orthography'], required=True, help='Indicates for which model to extract the similarities')
 args = parser.parse_args()
 
 ### Housekeeping
 
-output_folder = '../rsa_analyses/computational_models/{}'.format(args.computational_model)
+output_folder = '../computational_models/{}'.format(args.computational_model)
 os.makedirs(output_folder, exist_ok=True)
 
 ### Reading words
@@ -89,8 +89,54 @@ if 1 != 1:
             for word_tuple, sim in normalized_sims.items():
                 o.write('{}\t{}\t{}\n'.format(word_tuple[0], word_tuple[1], sim))
 
+elif args.computational_model == 'cslb':
+
+    eng_to_it = dict()
+
+    with open('../lab_experiment/stimuli_final.csv', 'r') as stimuli_file:
+        for i, l in enumerate(stimuli_file):
+            if i > 0: 
+                l = l.strip().split(';')
+                w_and_n = l[3]
+                if '_' in w_and_n:
+                    w_and_n = w_and_n.split('_')[0]
+                words.append(w_and_n)
+                eng_to_it[w_and_n] = l[0] 
+
+    word_combs = [k for k in itertools.combinations(words, r=2)]
+
+    if args.computational_model == 'cslb':
+        
+        sim_dict = dict()
+        with open('../../../dataset/psicolinguistica/CSLB_Property_Norms_V1.1/cosine_noTax_pf5_long.dat') as i:
+            cslb = [l.strip().split('\t') for l in i.readlines()][1:]
+        #all_cslb = list(set([w[i] for w in cslb for i in range(2)]))
+        #missing = [k for k in eng_to_it.keys() if k not in all_cslb]
+
+        mapping = {'houseboat' : 'room', 'newspaper' : 'paper', 'raccoon' : 'ferret', 'television' : 'computer', 'kettle' : 'pan', 'raven' : 'crow', 'plate' : 'dish', 'axe' : 'ax', 'dolphin' : 'dolphinfish', 'seal_(animal)' : 'earless seal', 'donkey' : 'domestic ass', 'rolling_pin' : 'rolling pin', 'washing_machine' : 'washing machine', 'cupboard' : 'wardrobe'}
+
+        for l in cslb:
+
+            w_one = l[0] if l[0] not in mapping.keys() else mapping[l[0]]
+            w_two = l[1] if l[1] not in mapping.keys() else mapping[l[1]]
+
+            if w_one in eng_to_it.keys() and w_two in eng_to_it.keys():
+
+                it_one = eng_to_it[w_one]
+                it_two = eng_to_it[w_two]
+                sim_dict[(it_one, it_two)] = float(l[2])
+                sim_dict[(it_two, it_one)] = float(l[2])
+
+        with open(os.path.join(output_folder, 'cslb.sims'), 'w') as o:
+            o.write('Word one\tWord two\tCSLB Similarity\n')
+            for tup, sim in sim_dict.items():
+                o.write('{}\t{}\t{}\n'.format(tup[0], tup[1], sim))
+
+        import pdb; pdb.set_trace()
+        for c in word_combs:
+            pass
 #elif args.computational_model == 'wordnet' or args.computational_model == 'simlex-999':
-elif args.computational_model == 'simlex-999':
+#elif args.computational_model == 'simlex-999':
 
     eng_to_it = dict()
 
@@ -111,27 +157,27 @@ elif args.computational_model == 'simlex-999':
 
     if args.computational_model == 'simlex-999':
 
-        simlex_dict = dict()
+        sim_dict = dict()
         with open('../../../casa_nuova/lib/python3.8/site-packages/gensim/test/test_data/simlex999.txt') as i:
             simlex999 = [l.strip().split('\t') for l in i.readlines()][2:]
         for l in simlex999:
-            simlex_dict[(l[0], l[1])] = float(l[2])
-            simlex_dict[(l[1], l[0])] = float(l[2])
+            sim_dict[(l[0], l[1])] = float(l[2])
+            sim_dict[(l[1], l[0])] = float(l[2])
 
-        counter = list()
-        output_dict = dict()
-        for c in word_combs:
+    counter = list()
+    output_dict = dict()
+    for c in word_combs:
+        if isinstance(c, tuple):
+            c = tuple([re.sub('\...+', '', w) for w in c])
             if isinstance(c, tuple):
-                c = tuple([re.sub('\...+', '', w) for w in c])
-                if isinstance(c, tuple):
-                   
-                    if c not in simlex_dict.keys():
-                        counter.append(c)
-                    else:
-                        try:
-                            output_dict[c] = simlex_dict[c]
-                        except IndexError:
-                            output_dict[c] = simlex_dict[(c[1], c[0])]
+               
+                if c not in sim_dict.keys():
+                    counter.append(c)
+                else:
+                    try:
+                        output_dict[c] = simlex_dict[c]
+                    except IndexError:
+                        output_dict[c] = simlex_dict[(c[1], c[0])]
 
         #assert len(counter) == 0
  
