@@ -67,7 +67,7 @@ if args.searchlight:
     searchlight_converter = {i : v for i, v in enumerate([t for t in range(0, len(timepoint_converter), args.hop)])}
 chosen_timepoints = [k for k, v in searchlight_converter.items() if timepoint_converter[v]>=-.2 and timepoint_converter[v]<1.]
 
-plot_path = os.path.join('group_level_plots', args.computational_model, args.word_selection)
+plot_path = os.path.join('group_level_plots', args.analysis, args.computational_model, args.word_selection)
 os.makedirs(plot_path, exist_ok=True)
 
 final_plot = collections.defaultdict(list)
@@ -104,7 +104,7 @@ if 'cluster' in args.comparisons_correction:
         if args.comparisons_correction == 'cluster':
             res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, max_step=1, n_jobs=os.cpu_count()-1)
         if args.comparisons_correction == 'cluster_tfce':
-            res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1, n_permutations='all')
+            res = mne.stats.spatio_temporal_cluster_1samp_test(condition_array, tail=1, adjacency=mne_adj_matrix, threshold=dict(start=0, step=0.2), n_jobs=os.cpu_count()-1, n_permutations=8000)
         ps = [(i, k) for i, k in enumerate(res[2])]
         highest_p = [k for k in sorted(ps, key=lambda item: item[1]) if k[1] <= .05]
         times = [res[1][i[0]][0][0] for i in highest_p]
@@ -148,7 +148,7 @@ if 'cluster' in args.comparisons_correction:
                 
                 evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[i for i in evoked.times], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
 
-            pyplot.savefig(os.path.join(plot_path, '{}_{}_{}.png'.format(args.computational_model, mode, args.computational_model, condition)), dpi=600)
+            pyplot.savefig(os.path.join(plot_path, '{}_{}_{}.png'.format(mode, args.computational_model, condition)), dpi=600)
             pyplot.clf()
 
 else:

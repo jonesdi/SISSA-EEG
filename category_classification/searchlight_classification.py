@@ -15,6 +15,7 @@ from tqdm import tqdm
 from multiprocessing import Pool
 from matplotlib import pyplot
 from scipy import stats
+from sklearn import svm
 
 import sys
 sys.path.append('../rsa_analyses')
@@ -51,7 +52,7 @@ def run_searchlight_classification(arguments):
                 current_t_train = pca.transform(current_t_train)
                 current_t_test = pca.transform(current_t_test)
 
-            svm_model = sklearn.svm.SVC().fit(current_t_train, train_labels)
+            svm_model = svm.SVC().fit(current_t_train, train_labels)
             score = svm_model.score(current_t_test, test_labels)
             iteration_scores.append(score)
 
@@ -101,7 +102,7 @@ if __name__ == '__main__':
         selected_evoked = restrict_evoked_responses(args, evoked_responses)
 
         for condition, evoked_dict in selected_evoked.items():
-            logging('Now starting with subject {}, condition {}...'.format(s, condition))           
+            logging.info('Now starting with subject {}, condition {}...'.format(s, condition))           
             #print('Current condition: {}'.format(condition))
             all_data = collections.defaultdict(list)
             
@@ -133,7 +134,7 @@ if __name__ == '__main__':
                     pool.close()
                     pool.join()
                 res = sorted(res, key=lambda item: item[0])
-                logging('Now finished with subject {}..., condition {}'.format(s, condition))           
+                logging.info('Now finished with subject {}..., condition {}'.format(s, condition))           
 
                 ### Writing the classification maps
                 with open(os.path.join(map_folder, '{}.map'.format(condition)), 'w') as o:

@@ -9,6 +9,7 @@ import numpy
 import scipy
 import sklearn
 
+from sklearn import svm
 from tqdm import tqdm
 from matplotlib import pyplot
 from scipy import stats
@@ -87,7 +88,7 @@ def run_classification(args, s, evoked_responses, t_points):
                         current_t_train = pca.transform(current_t_train)
                         current_t_test = pca.transform(current_t_test)
 
-                    svm_model = sklearn.svm.SVC().fit(current_t_train, train_labels)
+                    svm_model = svm.SVC().fit(current_t_train, train_labels)
                     score = svm_model.score(current_t_test, test_labels)
                     iteration_scores.append(score)
 
@@ -112,7 +113,7 @@ numpy.seterr(all='raise')
 
 if __name__ == '__main__':
 
-    folder = os.path.join('classification_plots', args.analysis)
+    folder = os.path.join('time_resolved_classification_plots', args.analysis)
     os.makedirs(folder, exist_ok=True)
 
     full_results = collections.defaultdict(list)
@@ -145,6 +146,9 @@ if __name__ == '__main__':
     ### Plotting results
 
     for k, v in full_results.items():
+
+        number_of_subjects = len(v)
+
         fig, ax = pyplot.subplots()
         y = numpy.nanmean([vec[0] for vec in v], axis=0)
 
@@ -161,6 +165,7 @@ if __name__ == '__main__':
             #ax.plot(vec[0])
             ax.scatter(x=times, y=vec[0], alpha=0.1)
         ax.plot(times, y)
+        ax.legend(['subjects N={}'.format(number_of_subjects)])
         ax.hlines(y=0.5, xmin=all_time_points[0], xmax=times[-1], linestyles='dashed', linewidths=.1, colors='darkgray')
         pca_marker = ' - using PCA' if args.PCA else ''
         ax.set_title('Accuracies for {}{} - {}'.format(k, pca_marker, args.word_selection))
