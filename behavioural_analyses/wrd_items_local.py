@@ -1,4 +1,5 @@
 import os
+<<<<<<< HEAD
 import numpy
 import pandas
 import collections
@@ -12,11 +13,14 @@ def mixed_model(dependent_variable, fixed, random, data_frame):
     md = smf.mixedlm('{} ~ {}'.format(dependent_variable, fixed), data_frame, re_formula=random, groups=data_frame['subject'])
     mdf = md.fit(method=["lbfgs"])
     print(mdf.summary())
+=======
+>>>>>>> 2e03cec974770c97b0cbf0aea1db0b94848ecc70
 
 ### Reading the stimuli file
 with open('../lab_experiment/stimuli_final.csv') as i:
     stimuli = [l.strip().split(';')[:3] for l in i.readlines()][1:]
 
+<<<<<<< HEAD
 word_to_cat = {w[0] : w[1] for w in stimuli}
 
 ### Computing the orthographic neighborhood measures
@@ -104,3 +108,27 @@ data_frame.to_csv('behav_data_long_format.csv')
 data_frame = pandas.read_csv('behav_data_long_format.csv')
 
 mixed_model(dependent_variable, fixed, random, data_frame)
+=======
+### Reading lexvar
+with open('lexvar.csv') as i:
+    lexvar = [l.strip().split(',') for l in i.readlines()]
+
+heading = list()
+for index, metric_measure in enumerate(zip(lexvar[0], lexvar[1])):
+    metric = metric_measure[0]
+    measure = metric_measure[1]
+    if metric == '':
+        for i in range(index, -1, -1):
+            if lexvar[0][i] != '':
+                metric = lexvar[0][i]
+                break
+    value = '{}_{}'.format(metric, measure)
+    heading.append(value)
+
+    
+chosen_variables = ['WORD_Italian', '   FAM_mean', 'IMAG_mean', 'CONC_mean','Adult WrtFQ_ILC', 'Adult WrtFQ_CoLFIS', 'Adult_NSIZE', 'Adult_BIGR', 'Adult_SYL', 'Lexical_LET']
+relevant_indices = [i[0] for i in enumerate(heading) if i[1] in chosen_variables]
+
+lexvar = [[l[i] for i in relevant_indices] for l in lexvar if l[0].lower() in [w[0] for w in stimuli]]
+import pdb; pdb.set_trace()
+>>>>>>> 2e03cec974770c97b0cbf0aea1db0b94848ecc70
