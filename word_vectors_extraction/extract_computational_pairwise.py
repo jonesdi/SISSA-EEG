@@ -12,7 +12,6 @@ import re
 from tqdm import tqdm
 from nltk.corpus import wordnet
 
-
 def levenshtein(seq1, seq2):
     size_x = len(seq1) + 1
     size_y = len(seq2) + 1
