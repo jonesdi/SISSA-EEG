@@ -62,8 +62,8 @@ if __name__ == '__main__':
 
 
         #for s in range(6, 17): 
-        for s in range(2, 17): 
-        #for s in [2]: 
+        #for s in range(2, 17): 
+        for s in [17]: 
 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
@@ -84,8 +84,8 @@ if __name__ == '__main__':
     else:
         processes = list()
 
-        for s in range(2, 17): 
-        #for s in [2]: 
+        #for s in range(2, 17): 
+        for s in [17]: 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
 

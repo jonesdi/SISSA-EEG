@@ -194,7 +194,7 @@ class EvokedResponses:
 
     def read_original_epochs(self):
 
-        epochs = mne.read_epochs(os.path.join(self.folder, 'sub-{:02}_highpass-100Hz-epoched-concatenated.fif'.format(self.subject_number)))
+        epochs = mne.read_epochs(os.path.join(self.folder, 'sub-{:02}_highpass-100Hz-epoched-concatenated.fif'.format(self.subject_number)), verbose=False)
         epochs.drop_channels('Status')
         epochs = epochs.get_data()
         feature_standardizer = mne.decoding.Scaler(scalings='mean')
