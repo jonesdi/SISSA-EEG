@@ -1,0 +1,63 @@
+Data availability for Wrong
+
+	Using 1 evoked responses: [40, 34, 25, 20, 19, 18, 37, 7, 35, 21, 35, 24, 8, 30, 17]
+	Using 2 evoked responses: [39, 25, 17, 7, 10, 5, 29, 2, 24, 6, 31, 13, 0, 23, 13]
+	Using 4 evoked responses: [37, 16, 4, 0, 1, 1, 16, 0, 16, 3, 18, 5, 0, 11, 2]
+	Using 8 evoked responses: [15, 10, 1, 0, 1, 0, 2, 0, 2, 1, 2, 0, 0, 5, 0]
+
+
+
+Data availability for Correct
+
+	Using 1 evoked responses: [40, 40, 40, 40, 39, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40]
+	Using 2 evoked responses: [40, 39, 40, 40, 39, 40, 40, 40, 40, 40, 40, 40, 40, 39, 40]
+	Using 4 evoked responses: [40, 38, 40, 40, 37, 40, 39, 40, 40, 40, 40, 40, 40, 38, 40]
+	Using 8 evoked responses: [27, 31, 31, 27, 11, 36, 29, 40, 38, 39, 39, 37, 39, 35, 40]
+
+
+
+Data availability for Medium
+
+	Using 1 evoked responses: [28, 40, 34, 25, 38, 13, 39, 25, 38, 37, 40, 37, 29, 34, 29]
+	Using 2 evoked responses: [19, 39, 25, 17, 33, 3, 36, 12, 34, 35, 40, 28, 14, 33, 20]
+	Using 4 evoked responses: [8, 34, 6, 3, 16, 1, 20, 2, 24, 20, 35, 16, 2, 27, 2]
+	Using 8 evoked responses: [0, 8, 0, 0, 1, 0, 6, 1, 4, 13, 18, 3, 0, 14, 0]
+
+
+
+Data availability for Low
+
+	Using 1 evoked responses: [40, 39, 36, 17, 35, 15, 39, 8, 37, 25, 37, 31, 17, 40, 25]
+	Using 2 evoked responses: [40, 34, 26, 9, 29, 6, 37, 1, 31, 12, 36, 26, 2, 39, 18]
+	Using 4 evoked responses: [40, 26, 15, 2, 12, 1, 33, 0, 23, 1, 23, 10, 0, 34, 5]
+	Using 8 evoked responses: [40, 12, 4, 0, 0, 0, 21, 0, 12, 0, 4, 3, 0, 26, 0]
+
+
+
+Data availability for High
+
+	Using 1 evoked responses: [15, 38, 38, 40, 22, 40, 21, 40, 37, 38, 34, 38, 40, 13, 40]
+	Using 2 evoked responses: [4, 31, 38, 37, 11, 39, 13, 40, 31, 37, 25, 35, 40, 6, 40]
+	Using 4 evoked responses: [1, 21, 31, 34, 1, 39, 6, 40, 26, 34, 22, 31, 39, 2, 40]
+	Using 8 evoked responses: [0, 9, 9, 21, 0, 35, 0, 39, 17, 24, 8, 18, 34, 0, 35]
+
+
+
+Data availability for Unaware
+
+	Using 1 evoked responses: [40, 40, 37, 20, 35, 18, 39, 12, 37, 27, 38, 31, 18, 40, 26]
+	Using 2 evoked responses: [40, 34, 28, 11, 30, 8, 37, 3, 32, 18, 38, 27, 2, 39, 19]
+	Using 4 evoked responses: [40, 28, 16, 4, 13, 2, 34, 0, 24, 5, 28, 12, 0, 35, 6]
+	Using 8 evoked responses: [40, 18, 5, 0, 1, 0, 23, 0, 13, 0, 14, 4, 0, 27, 0]
+
+
+
+Data availability for Aware
+
+	Using 1 evoked responses: [29, 40, 40, 40, 38, 40, 37, 40, 40, 40, 40, 40, 40, 35, 40]
+	Using 2 evoked responses: [20, 39, 40, 40, 35, 40, 30, 40, 40, 40, 40, 40, 40, 31, 40]
+	Using 4 evoked responses: [10, 36, 38, 39, 21, 40, 24, 40, 36, 40, 38, 40, 40, 25, 40]
+	Using 8 evoked responses: [0, 22, 19, 25, 4, 36, 9, 40, 29, 39, 29, 29, 39, 15, 40]
+
+
+
