@@ -4,7 +4,7 @@ import collections
 from tqdm import tqdm
 
 def read_vocabulary():
-    with open('itwac_absolute_frequencies.txt') as input_file:
+    with open('itwac_absolute_frequencies_50k.txt') as input_file:
         lines = [l.strip().split('\t')[1] for l in input_file.readlines()][1:]
     words = [l for l in lines if l.isalpha()][:35000]
     return words

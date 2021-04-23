@@ -1,11 +1,12 @@
 import os
-<<<<<<< HEAD
 import numpy
 import pandas
 import collections
+import math
 
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from matplotlib import pyplot
 
 from orthographic_measures import coltheart_N, OLD_twenty
 
@@ -13,14 +14,11 @@ def mixed_model(dependent_variable, fixed, random, data_frame):
     md = smf.mixedlm('{} ~ {}'.format(dependent_variable, fixed), data_frame, re_formula=random, groups=data_frame['subject'])
     mdf = md.fit(method=["lbfgs"])
     print(mdf.summary())
-=======
->>>>>>> 2e03cec974770c97b0cbf0aea1db0b94848ecc70
 
 ### Reading the stimuli file
 with open('../lab_experiment/stimuli_final.csv') as i:
     stimuli = [l.strip().split(';')[:3] for l in i.readlines()][1:]
 
-<<<<<<< HEAD
 word_to_cat = {w[0] : w[1] for w in stimuli}
 
 ### Computing the orthographic neighborhood measures
@@ -30,10 +28,10 @@ colt = coltheart_N([w[0] for w in stimuli])
 OLD = OLD_twenty([w[0] for w in stimuli])
 
 ### Reading the frequencies
-with open('/import/cogsci/andrea/dataset/co_occurrences/itwac/itwac_absolute_frequencies_50k.txt') as i:
+with open('/import/cogsci/andrea/dataset/co_occurrences/itwac/itwac_absolute_frequencies.txt') as i:
     frequencies = [l.strip().split('\t') for l in i.readlines()][1:]
 
-frequencies = {l[1] : float(l[2]) for l in frequencies}
+frequencies = {l[1] : math.log(float(l[2])) for l in frequencies}
 
 for k in stimuli:
     assert k[0] in [k for k in frequencies.keys()]
@@ -50,6 +48,22 @@ mean_len = numpy.average([v for k, v in lengths.items()])
 std_len = numpy.std([v for k, v in lengths.items()])
 z_lengths = {k : (v-mean_len)/std_len for k, v in lengths.items()}
 
+### Boxplots
+os.makedirs('word_boxplots', exist_ok=True)
+for variable_tup in [('coltheart_N', colt), ('OLD20', OLD), ('log frequency', frequencies), ('word_lengths', lengths)]:
+    variable = variable_tup[1]
+    name = variable_tup[0]
+    targets = [variable[w[0]] for w in stimuli if w[2]=='target']
+    fillers = [variable[w[0]] for w in stimuli if w[2]=='filler']
+    fig, ax = pyplot.subplots()
+    ax.boxplot([targets, fillers])
+    ax.set_xticklabels(['targets', 'fillers'])
+    ax.set_title('Comparisons of {} for targets and fillers'.format(name.capitalize().replace('_', ' ')))
+    pyplot.savefig('word_boxplots/{}.png'.format(name), dpi=600)
+    pyplot.clf()
+
+import pdb; pdb.set_trace()
+
 ### Path to the original files
 #data_folder = 'C:/Users/andre/OneDrive - Queen Mary, University of London/conscious_unconscious_processing/raw_files'
 data_folder = '/import/cogsci/andrea//dataset/neuroscience/conscious_unconscious_processing/behavioural_events_log/'
@@ -57,7 +71,7 @@ data_folder = '/import/cogsci/andrea//dataset/neuroscience/conscious_unconscious
 ### Creating the dict container for the data
 data_dict = {'subject' : list(), \
              'word' : list(), \
-             'frequency' : list(), \
+             'log_frequency' : list(), \
              'length' : list(), \
              'coltheart_N' : list(), \
              'OLD_20' : list(), \
@@ -92,7 +106,7 @@ for s in range(2, 18):
             accuracy = 0 if d[3] == 'wrong' else 1
             data_dict['subject'].append(s)
             data_dict['word'].append(word)
-            data_dict['frequency'].append(z_frequencies[word])
+            data_dict['log_frequency'].append(z_frequencies[word])
             data_dict['length'].append(z_lengths[word])
             data_dict['coltheart_N'].append(colt[word])
             data_dict['OLD_20'].append(OLD[word])
@@ -105,10 +119,11 @@ for s in range(2, 18):
 data_frame = pandas.DataFrame.from_dict(data_dict)
 data_frame.to_csv('behav_data_long_format.csv')
 
+
+import pdb; pdb.set_trace()
 data_frame = pandas.read_csv('behav_data_long_format.csv')
 
 mixed_model(dependent_variable, fixed, random, data_frame)
-=======
 ### Reading lexvar
 with open('lexvar.csv') as i:
     lexvar = [l.strip().split(',') for l in i.readlines()]
@@ -130,5 +145,3 @@ chosen_variables = ['WORD_Italian', '   FAM_mean', 'IMAG_mean', 'CONC_mean','Adu
 relevant_indices = [i[0] for i in enumerate(heading) if i[1] in chosen_variables]
 
 lexvar = [[l[i] for i in relevant_indices] for l in lexvar if l[0].lower() in [w[0] for w in stimuli]]
-import pdb; pdb.set_trace()
->>>>>>> 2e03cec974770c97b0cbf0aea1db0b94848ecc70

@@ -12,13 +12,29 @@ from io_utils import ComputationalModels, EvokedResponses
 from rsa_utils import run_rsa
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--permutation', action='store_true', default=False, help='Indicates whether to run a permutation analysis or not')
-parser.add_argument('--searchlight', action='store_true', default=False, help='Indicates whether to run a searchlight analysis or not')
-parser.add_argument('--analysis', default='both_worlds', choices=['objective_accuracy', 'subjective_judgments', 'both_worlds'], help='Indicates which pairwise similarities to compare, whether by considering objective accuracy or subjective judgments')
-parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'targets_only'], help='Indicates whether to use for the analyses only the targets or all the words')
-parser.add_argument('--computational_model', default='w2v', choices=['cslb', 'CORnet', 'visual', 'orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], help='Indicates which similarities to use for comparison to the eeg similarities')
-parser.add_argument('--hop', default=3, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
-parser.add_argument('--temporal_window_size', default=7, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--permutation', \
+                    action='store_true', default=False, \
+                    help='Indicates whether to run a permutation analysis or not')
+parser.add_argument('--searchlight', action='store_true', \
+                    default=False, help='Indicates whether to run a searchlight analysis or not')
+parser.add_argument('--analysis', default='both_worlds', \
+                    choices=['objective_accuracy', 'subjective_judgments', 'both_worlds'], \
+                    help='Indicates which pairwise similarities to compare, \
+                          whether by considering objective accuracy or subjective judgments')
+parser.add_argument('--word_selection', default='targets_only', \
+                    choices=['all_words', 'targets_only'], \
+                    help='Indicates whether to use for the analyses only the targets or all the words')
+parser.add_argument('--minimum_ERPs', type=int, default=4, \
+                    choices=[1,2,4], help='Indicates how many \
+                    erps will be required for keeping the words for the analyses \
+                    and how many will be used for averaging')
+parser.add_argument('--computational_model', default='w2v', \
+                    choices=['cslb', 'CORnet', 'visual', 'orthography', 'w2v', 'original_cooc', 'ppmi', 'new_cooc', 'wordnet'], \
+                    help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--hop', default=3, type=int, \
+                    help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--temporal_window_size', default=7, \
+                    type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 args = parser.parse_args()
 
 ### RSA
@@ -62,8 +78,8 @@ if __name__ == '__main__':
 
 
         #for s in range(6, 17): 
-        #for s in range(2, 17): 
-        for s in [17]: 
+        for s in range(3, 18): 
+        #for s in [17]: 
 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
@@ -84,8 +100,8 @@ if __name__ == '__main__':
     else:
         processes = list()
 
-        #for s in range(2, 17): 
-        for s in [17]: 
+        for s in range(3, 18): 
+        #for s in [17]: 
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
 

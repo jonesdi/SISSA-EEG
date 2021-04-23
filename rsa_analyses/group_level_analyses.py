@@ -51,6 +51,10 @@ parser.add_argument('--computational_model', default='w2v', choices=['cslb', 'CO
 parser.add_argument('--comparisons_correction', default='cluster_tfce', choices=['fdr', 'cluster', 'cluster_tfce', 'maximal_permutation'], help='Indicates which multiple comparisons correction approach to use')
 parser.add_argument('--hop', default=3, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 parser.add_argument('--temporal_window_size', default=7, type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
+parser.add_argument('--minimum_ERPs', type=int, default=4, \
+                    choices=[1,2,4], help='Indicates how many \
+                    erps will be required for keeping the words for the analyses \
+                    and how many will be used for averaging')
 args = parser.parse_args()
 
 if args.analysis == 'objective_accuracy':
@@ -67,12 +71,13 @@ if args.searchlight:
     searchlight_converter = {i : v for i, v in enumerate([t for t in range(0, len(timepoint_converter), args.hop)])}
 chosen_timepoints = [k for k, v in searchlight_converter.items() if timepoint_converter[v]>=-.2 and timepoint_converter[v]<1.]
 
-plot_path = os.path.join('group_level_plots', args.analysis, args.computational_model, args.word_selection)
+plot_path = os.path.join('group_level_plots',  'average_{}'.format(args.minimum_ERPs), args.analysis, args.computational_model, args.word_selection)
 os.makedirs(plot_path, exist_ok=True)
 
 final_plot = collections.defaultdict(list)
 true_data = collections.defaultdict(lambda: collections.defaultdict(lambda : collections.defaultdict(list)))
 
+missing = collections.defaultdict(list)
 
 if 'cluster' in args.comparisons_correction:
 
@@ -80,7 +85,7 @@ if 'cluster' in args.comparisons_correction:
 
         condition_list = list()
 
-        for s in tqdm(range(2, 17)):
+        for s in tqdm(range(3, 18)):
             ### Collecting the true results
             base_folder = prepare_folder(args, s)
             sub_list = list()    
@@ -95,6 +100,7 @@ if 'cluster' in args.comparisons_correction:
                         t_list = [float(elec[t]) for elec in all_electrodes]
                         sub_list.append(t_list)
             except FileNotFoundError:
+                #missing[condition].append(s)
                 pass
 
             if len(set([str(k) for t in sub_list for k in t])) != 1:
@@ -135,21 +141,27 @@ if 'cluster' in args.comparisons_correction:
         montage=mne.channels.make_standard_montage('biosemi128')
         evoked.set_montage(montage)
 
-        for i in range(2):
+        if len(time_indices) >= 1:
 
-            mode = 'all' if i==0 else 'significant'
+            for i in range(2):
 
-            title='{} time points for model: {} - Condition: {}'.format(mode.capitalize(), args.computational_model, condition)
+                mode = 'all' if i==0 else 'significant'
 
-            if mode == 'significant':
-                if len(time_indices) >= 1:
-                    evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[evoked.times[i] for i in time_indices], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
-            else:
-                
-                evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[i for i in evoked.times], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
+                title='{} time points for model: {} - Condition: {}'.format(mode.capitalize(), args.computational_model, condition)
 
-            pyplot.savefig(os.path.join(plot_path, '{}_{}_{}.png'.format(mode, args.computational_model, condition)), dpi=600)
-            pyplot.clf()
+                if mode == 'significant':
+                        evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[evoked.times[i] for i in time_indices], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
+                else:
+                    
+                    evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[i for i in evoked.times], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
+
+                pyplot.savefig(os.path.join(plot_path, '{}_{}_{}.png'.format(mode, args.computational_model, condition)), dpi=600)
+                pyplot.clf()
+
+    #with open(os.path.join(plot_path, 'missing_subjects.txt'), 'w') as o:
+        #o.write('Condition\tSubjects missing\n')
+        #for k, v in missing.items():
+            #o.write('{}\t{}\n'.format(k, v))
 
 else:
 

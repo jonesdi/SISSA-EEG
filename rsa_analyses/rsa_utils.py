@@ -104,7 +104,7 @@ def prepare_folder(args, s, permutation=0):
     else:
         searchlight_params = ''
 
-    folder_path = os.path.join('rsa_maps', brain_approach, searchlight_params, \
+    folder_path = os.path.join('rsa_maps', 'minimum_{}'.format(args.minimum_ERPs), brain_approach, searchlight_params, \
                                 analysis, words, \
                                 computational_model, \
                                 'sub-{:02}'.format(s), permutation)
@@ -128,7 +128,7 @@ def run_rsa(args, s, evoked_responses, computational_model, all_time_points, per
 
         #print('Current condition: {}'.format(condition))
 
-        evoked_dict = {k : numpy.average(v, axis=0) for k, v in evoked_dict.items() if len(v) >= 4}
+        evoked_dict = {k : numpy.average(v, axis=0) for k, v in evoked_dict.items() if len(v) >= args.minimum_ERPs}
         
         if args.permutation:
             keys = random.sample(evoked_dict.keys(), k=len(evoked_dict.keys()))

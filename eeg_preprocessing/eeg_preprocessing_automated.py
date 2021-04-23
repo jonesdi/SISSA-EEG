@@ -60,9 +60,9 @@ for s in [2]:
         events_raw = pandas.read_csv(os.path.join(main_folder, events_folder, 'run_{:02}_events_log.csv'.format(r)))
         ### Small fix for subject 2
         if r == 2:
-            events_info = [(events_raw['Word'][index], events_raw['Group'][index], events_raw['Trigger code'][index], events_raw['Prediction outcome'][index], events_raw['Certainty'][index]) for index in range(20)]
-        else:
             events_info = [(events_raw['Word'][index], events_raw['Group'][index], events_raw['Trigger code'][index]+10, events_raw['Prediction outcome'][index], events_raw['Certainty'][index]) for index in range(20)]
+        else:
+            events_info = [(events_raw['Word'][index], events_raw['Group'][index], events_raw['Trigger code'][index], events_raw['Prediction outcome'][index], events_raw['Certainty'][index]) for index in range(20)]
         original_events_list.extend(events_info)
         events_list.append(current_events)
         raws_list.append(cropped_raw)
