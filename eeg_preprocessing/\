@@ -36,7 +36,7 @@ number_of_subjects = len(os.listdir(args.data_folder))
 for s in range(1, number_of_subjects+1):
 
     epochs_list = list()
-    present_events = list()
+    trials_list = list()
     all_events = dict()
 
     subject_folder = 'sub-{:02}'.format(s)
@@ -58,7 +58,7 @@ for s in range(1, number_of_subjects+1):
                                       verbose=False)
         raw_raw.set_montage(montage)
 
-        ### Extracting events from file
+        ### Extracting events from file to a dictionary
         events_path = os.path.join(events_folder, \
                                    'run-{:02}.events'.format(r))
         with open(events_path) as events_file:
@@ -66,29 +66,17 @@ for s in range(1, number_of_subjects+1):
         header = lines[0]
         data = lines[1:]
 
+        events_dict = {h : [l[h_i] for l in data] for h_i, h in enumerate(header)}
+        ### Adding current events dictionary to general events dictionary
+        for k, v in events_dict.items():
+            if k not in all_events.keys():
+                all_events[k] = v
+            else:
+                all_events[k].extend(v)
+
         current_events = mne.find_events(raw_raw)
         if current_events.shape[0] != 20:
             print('sub {} r {}'.format(s, r))
-        if s == 1:
-            events_from_file = [d for d in data if int(d[3]) != 10]
-        else:
-            events_from_file = data.copy()
-
-        try:
-            assert len(events_from_file) == current_events.shape[0]
-        except AssertionError:
-            assert len(events_from_file) > current_events.shape[0]
-            old_events = events_from_file.copy()
-            events_from_file = list()
-            to_be_subtracted = 0
-            for e_i, e in enumerate(old_events):
-                index = max(0, e_i - to_be_subtracted)
-                trigger = int(e[3]) if s!=1 else int(e[3])-10
-                if trigger == current_events[index, 2]:
-                    events_from_file.append(e)
-                else:
-                    to_be_subtracted += 1
-        assert len(events_from_file) == current_events.shape[0]
             
         ### Cropping so as to remove useless recorded samples before/after testing
         sampling = raw_raw.info['sfreq']
@@ -112,11 +100,14 @@ for s in range(1, number_of_subjects+1):
                        picks=picks_eog)
 
         # Epoch the data
-
         epochs = mne.Epochs(raw=raw_raw, \
                             events=current_events, \
                             tmin=-0.1, tmax=1.1, \
                             preload=True, decim=8)
+
+        ### Trigger code correction for subject 1
+        if s == 1:
+            epochs.events = numpy.array([l+[0,0,10] for l in epochs.events])
 
         # Finding bad channels in EEG
 
@@ -162,43 +153,17 @@ for s in range(1, number_of_subjects+1):
 
         ### Dropping EOG channels
         epochs.drop_channels(eog_channels)
-        ### Dropping the stim channel
-        epochs.drop_channels(['Status'])
 
         epochs_list.append(epochs) 
+        trials_list.append(epochs.drop_log)
 
-        ### Adding current events dictionary to general events dictionary before dropping to data frame
-        all_events_dict = {h : [l[h_i] for l in data] for h_i, h in enumerate(header)}
-        for k, v in all_events_dict.items():
-            if k not in all_events.keys():
-                all_events[k] = v
-            else:
-                all_events[k].extend(v)
-
-        ### Preparing the list of epochs actually present in the epochs
-        for e_i, e in enumerate(epochs.drop_log):
-            if len(e) == 0:
-                current_epoch = events_from_file[e_i]
-                present_events.append([current_epoch[1], \
-                                       current_epoch[4], \
-                                       current_epoch[6], \
-                                       ]) # word, accuracy, awareness
-
+    import pdb; pdb.set_trace()
+    print('Writing epochs to file')
     all_epochs = mne.concatenate_epochs(epochs_list)
-    assert len(all_epochs) == len(present_events)
-    
-    ### Writing epochs to file
     epochs_file = 'sub-{:02}_epo.fif'.format(s)
-    all_epochs.save(os.path.join(output_folder, epochs_file), \
-                overwrite=True)
+    epochs.save(os.path.join(output_folder, epochs_file))
 
-    ### Writing events to file
-    with open(os.path.join(output_folder, 'sub-{:02}_epo.events'.format(s)), 'w') as o:
-        o.write('Word\tAccuracy\tAwareness\n')
-        for e in present_events:
-            for v in e:
-                o.write('{}\t'.format(v))
-            o.write('\n')
+
     '''
     subject_raw, events = mne.concatenate_raws(raws_list, events_list=events_list)
     all_events_ids = {k : v for k, v in all_events_ids.items() if v in [i[2] for i in events]}

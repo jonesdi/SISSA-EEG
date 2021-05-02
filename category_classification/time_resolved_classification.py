@@ -14,12 +14,16 @@ from tqdm import tqdm
 from matplotlib import pyplot
 from scipy import stats
 
+'''
 import sys
 sys.path.append('../rsa_analyses')
 
 from io_utils import EvokedResponses, ComputationalModels
 from searchlight import SearchlightClusters, run_searchlight
 from rsa_utils import restrict_evoked_responses, prepare_folder
+'''
+
+from io_utils import ExperimentInfo, SubjectData
 
 def run_classification(args, s, evoked_responses, t_points):
 
@@ -107,7 +111,16 @@ parser.add_argument('--analysis', default='both_worlds', choices=['objective_acc
 parser.add_argument('--word_selection', default='targets_only', choices=['all_words', 'targets_only'], help='Indicates whether to use for the analyses only the targets or all the words')
 parser.add_argument('--searchlight', action='store_true', default=False, help='Indicates whether to run a searchlight analysis or not')
 parser.add_argument('--PCA', action='store_true', default=False, help='Indicates whether to reduce dimensionality via PCA or not')
+parser.add_argument('--data_folder', type=str, required=True, \
+                    help='Folder where to find the preprocessed data')
 args = parser.parse_args()
+
+exp = ExperimentInfo(args)
+for n in range(exp.n_subjects):
+    eeg = SubjectData(exp, n, args)
+        
+    import pdb; pdb.set_trace()
+    
 
 numpy.seterr(all='raise')
 
