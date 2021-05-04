@@ -9,3 +9,4 @@ results/*
 *classification_plots*
 *preprocessed_data*
 *raw_data*
+'*classification_per_subject*'
