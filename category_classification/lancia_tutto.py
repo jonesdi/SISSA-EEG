@@ -1,9 +1,8 @@
 import os
 
-analyses = ['objective_accuracy', 'subjective_judgments', 'both_worlds']
-words = ['all_words', 'targets_only']
+analyses = ['subjective_judgments', 'objective_accuracy']
 
 for analysis in analyses:
-    for word in words:
-        print('python3 time_resolved_classification.py --analysis {} --word_selection {}'.format(analysis, word))
-        os.system('python3 group_searchlight_classification_analysis.py --analysis {} --word_selection {}'.format(analysis, word))
+    print('python3 time_resolved_classification.py --analysis {}'.format(analysis))
+    os.system('python3 time_resolved_classification.py --analysis {} \
+              --data_folder /import/cogsci/andrea/github/SISSA-EEG/eeg_preprocessing/preprocessed_data/'.format(analysis))
