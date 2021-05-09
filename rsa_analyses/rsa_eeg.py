@@ -64,6 +64,7 @@ if __name__ == '__main__':
     #rsa_per_subject(args, 3, computational_model)
     if args.permutation:
 
+        ''' 
         ### Preparing the batches
         batches = list()
         workers = os.cpu_count() - 1
@@ -97,11 +98,13 @@ if __name__ == '__main__':
                 for proc in processes:
                     proc.join()
     
+        '''
+        pass
     else:
         processes = list()
 
-        for s in range(3, 18): 
-        #for s in [17]: 
+        for s in range(1, 17): 
+
             evoked_responses = EvokedResponses(s)
             all_time_points = evoked_responses.time_points
 
