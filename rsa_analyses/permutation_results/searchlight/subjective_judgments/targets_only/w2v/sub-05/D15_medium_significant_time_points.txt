@@ -1,2 +1,0 @@
-Condition	time point	p-value	t-value
-medium	0.24921875	0.043333333333333335	1.718905160438891

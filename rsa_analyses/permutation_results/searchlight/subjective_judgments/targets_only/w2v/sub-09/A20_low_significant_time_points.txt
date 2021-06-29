@@ -1,2 +1,0 @@
-Condition	time point	p-value	t-value
-low	0.825390625	0.023333333333333317	1.997592229195553
