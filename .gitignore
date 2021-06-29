@@ -1,12 +1,2 @@
-results/*
 *__pycache__*
-*temp*
-*rsa_maps*
-*rsa_results*
-*swp*
-*stimuli_images*
-*group_level_plots*
-*classification_plots*
-*preprocessed_data*
-*raw_data*
-'*classification_per_subject*'
+resources/*
