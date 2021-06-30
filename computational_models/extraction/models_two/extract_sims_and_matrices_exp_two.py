@@ -76,7 +76,7 @@ coocs = list()
 ppmis = list()
 
 with open(os.path.join('..', '..', '..', 'resources', \
-                       'itwac_absolute_frequencies_50k.txt'),\
+                       'itwac_absolute_frequencies.txt'),\
                        encoding='utf-8') as i:
     lines = [l.strip().split('\t') for l in i.readlines()]
     total_words = int(re.sub(r'[^\d]+', '', lines[0][-1]))
@@ -143,7 +143,7 @@ bert_vectors = dict()
 for w in tqdm(it_words):
     
     w_vectors = list()
-    wiki_file = os.path.join('wiki_folder', '{}.wiki'.format(w))
+    wiki_file = os.path.join(wiki_folder, '{}.wiki'.format(w))
     with open(wiki_file, encoding='utf-8') as i:
         final_lines = [l.strip() for l in i.readlines()]
     
