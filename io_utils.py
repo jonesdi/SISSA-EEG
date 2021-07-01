@@ -46,6 +46,13 @@ class ExperimentInfo:
         with open(stimuli_file) as i:
             lines = [l.strip().split(separator) \
                        for l in i.readlines()][1:]
+        if args.experiment_id == 'one':
+        
+            ### Removing unused words
+            ordered_indices = list(range(10)) + list(range(20, 30)) + list(range(10, 20)) + list(range(40, 50))
+
+            lines = [lines[i] for i in ordered_indices]
+
         words_to_cats = {l[0] : cat_index for l in lines}
 
         return words_to_cats
