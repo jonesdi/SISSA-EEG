@@ -81,20 +81,6 @@ class SubjectData:
         assert numpy.sum([len(vec) for k, v in eeg_data.items() for k_two, vec in v.items()]) == \
                len(self.words)
 
-        '''
-        ### Removing words present less than 4 times in one of the two conditions
-        final_words = list()
-        for w in set(self.words):
-            marker = 0
-            for k, v in eeg_data.items():
-                if len(v[w]) >= 4:
-                    pass
-                else:
-                    marker += 1
-            if marker == 0:
-                final_words.append(w)
-        '''
-
         ### Turning the defaultdict into a regular one
         ### Keeping only words having at least 4 ERPs
 
@@ -110,7 +96,7 @@ class SubjectData:
 
             regular_dict[k] = word_dict
 
-        ### Subsampling and averaging 4 ERPs
+        ### Subsampling by averaging by a factor of 5, and then averaging 4 ERPs
         '''
         max_dict = dict()
         for w in final_words:

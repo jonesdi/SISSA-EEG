@@ -150,7 +150,7 @@ for s in range(1, number_of_subjects+1):
         eog_epochs = create_eog_epochs(raw_raw, \
                                        tmin=-.5, tmax=.5, \
                                        preload=True)
-        eog_epochs.decimate(5)
+        eog_epochs.decimate(8)
         eog_inds, scores_eog = ica.find_bads_eog(eog_epochs)
 
         # removing Individual Components
@@ -199,70 +199,3 @@ for s in range(1, number_of_subjects+1):
             for v in e:
                 o.write('{}\t'.format(v))
             o.write('\n')
-    '''
-    subject_raw, events = mne.concatenate_raws(raws_list, events_list=events_list)
-    all_events_ids = {k : v for k, v in all_events_ids.items() if v in [i[2] for i in events]}
-    assert len(original_events_list) == len(events)
-
-    subject_raw.filter(0.1, None, fir_design='firwin')
-
-
-    ### Epoching
-
-    ###############################################################################
-    # We define the events and the onset and offset of the epochs
-
-    tmin = -0.2
-    tmax = 1.5  # min duration between onsets: (400 fix + 800 stim + 1700 ISI) ms
-    reject_tmax = 1.0  # duration we really care about
-
-    baseline = (-0.2, 0)
-
-
-    ### projection=True applies the reference from average directly
-
-    picks = mne.pick_types(subject_raw.info, eeg=True, stim=True, eog=False, exclude=())
-
-
-
-
-
-    with open(os.path.join(main_folder, output_folder, 'sub-{:02}_preprocessing_log.txt'.format(s)), 'a') as o:
-        print('Found {} EOG indices'.format(len(eog_inds)))
-        o.write('Found {} EOG indices\n\n'.format(len(eog_inds)))
-
-
-    
-    print('Dropped {}% of epochs\n\n'.format(epochs.drop_log_stats()))
-
-    with open(os.path.join(main_folder, output_folder, 'sub-{:02}_preprocessing_log.txt'.format(s)), 'a') as o:
-        o.write('  Dropped {}% of epochs\n\n'.format(epochs.drop_log_stats()))
-        for epoch_index, tup in enumerate(epochs.drop_log):
-            o.write('event {}\trejection reason: {}\n'.format(epoch_index, tup))
-
-    ### Merging original events log with their 'good' or 'rejected' status
-
-    rejected_epochs_eog = [i for i, k in enumerate(epochs.drop_log) if len(k) != 0]
-
-    c = 0
-    for epoch_index, kept_or_not in enumerate(trials.keys()):
-        if kept_or_not == 'good':
-            if c in rejected_epochs_eog:
-                trials[c] = 'rejected_eog'
-            else:
-                pass
-            c += 1
-
-    with open(os.path.join(main_folder, output_folder, 'sub-{:02}_events_rejected_or_good.txt'.format(s)), 'a') as o:
-        for epoch_index, result_tuple in enumerate(epochs.drop_log):
-            for element in original_events_list[epoch_index]:
-                o.write('{}\t'.format(element))
-            if len(result_tuple) == 0:
-                result = 'good'
-            else:
-                result = 'rejected'
-            o.write('{}\n'.format(result))
-
-    del subject_raw, ica, eog_epochs
-
-'''
