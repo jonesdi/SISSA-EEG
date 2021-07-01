@@ -104,6 +104,7 @@ for s in range(1, number_of_subjects+1):
         cropped_raw.filter(l_freq=None, \
                            h_freq=80, \
                            picks=picks_eeg)
+
         ### EOG: Band-pass 1-50 Hz the EOG channels only to avoid problems with autoreject
         ### (following the reproducible pipeline on Wakeman&Henson)
         picks_eog = mne.pick_types(raw_raw.info, eeg=False, eog=True)
@@ -116,7 +117,10 @@ for s in range(1, number_of_subjects+1):
         epochs = mne.Epochs(raw=raw_raw, \
                             events=current_events, \
                             tmin=-0.1, tmax=1.1, \
-                            preload=True, decim=8)
+                            preload=True)
+
+        ### Reducing to a sample rate of 256
+        epochs.decimate(8)
 
         # Finding bad channels in EEG
 
@@ -126,7 +130,6 @@ for s in range(1, number_of_subjects+1):
         epochs, autoreject_log = bad_channels_finder.fit_transform(epochs, \
                                                             return_log=True)
 
-        print('Getting rejection thresholds by autoreject')
         reject = autoreject.get_rejection_threshold(epochs.copy(), \
                                                     ch_types='eeg')
         epochs.drop_bad(reject=reject)

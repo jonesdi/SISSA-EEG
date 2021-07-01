@@ -9,7 +9,7 @@ class ExperimentInfo:
     def __init__(self, args):
       
         self.n_subjects, self.paths = self.find_subjects(args)
-        self.words_to_cats = self.read_stimuli()
+        self.words_to_cats = self.read_stimuli(args)
         self.cats_to_words = {v : k for k, v in self.words_to_cats.items()}
     
     def find_subjects(self, args):
@@ -29,13 +29,23 @@ class ExperimentInfo:
 
         return n_subjects, paths
 
-    def read_stimuli(self):
-        stimuli_file = os.path.join('..', \
-                                    'lab_experiment', \
-                                    'stimuli_final.csv')
+    def read_stimuli(self, args):
+        experiment_path = os.path.join('lab', \
+                                    'lab_{}'.format(args.experiment_id))
+        if args.experiment_id == 'one':
+            file_name = 'stimuli_final.csv'
+            separator = ';'
+            cat_index = 1
+        elif args.experiment_id == 'two':
+            file_name = 'chosen_words.txt'
+            separator = '\t'
+            cat_index = 2
+
+        stimuli_file = os.path.join(experiment_path, file_name)
         with open(stimuli_file) as i:
-            lines = [l.strip().split(';') for l in i.readlines()][1:]
-        words_to_cats = {l[0] : l[1] for l in lines}
+            lines = [l.strip().split(separator) \
+                       for l in i.readlines()][1:]
+        words_to_cats = {l[0] : cat_index for l in lines}
 
         return words_to_cats
 
@@ -60,15 +70,20 @@ class SubjectData:
         return words, accuracies, reports
 
     def get_eeg_data(self, args):
+
         epochs = mne.read_epochs(self.eeg_path)
         times = epochs.times
+
         assert len(epochs) == len(self.words)
-        if args.analysis == 'objective_accuracy':
+
+        if args.data_split == 'objective_accuracy':
             splits = list(set(self.accuracies))
             indices = {s : [i for i, v in enumerate(self.accuracies) if v==s] for s in splits}
-        elif args.analysis == 'subjective_judgments':
+
+        elif args.data_split == 'subjective_judgments':
             splits = list(set(self.reports))
             indices = {s : [i for i, v in enumerate(self.reports) if v==s] for s in splits}
+
         assert numpy.sum([len(v) for k, v in indices.items()]) == len(self.words)
 
         eeg_data = collections.defaultdict(lambda : collections.defaultdict(list))
@@ -91,31 +106,43 @@ class SubjectData:
                #if k_two in final_words:
                if len(v_two) >= 4:
                    v_two = [vec.get_data()[0,:,:] for vec in v_two]
+                   # Shuffling the vectors so as to break temporal corr
                    shuffled = random.sample(v_two, k=len(v_two))
                    word_dict[k_two] = shuffled
 
             regular_dict[k] = word_dict
 
-        ### Subsampling by averaging by a factor of 5, and then averaging 4 ERPs
+        ### Averaging 4 ERPs
         '''
         max_dict = dict()
         for w in final_words:
             max_dict[w] = min([len(v[w]) for k, v in regular_dict.items()])
         '''
-        relevant_indices = [i for i in range(times.shape[0])][::5]
-        relevant_indices = [i for i in relevant_indices if i+5<times.shape[0]]
+        ### If we're not running a searchlight, then
+        ### subsample by averaging 5 time points
+
+        if not args.searchlight:
+            relevant_indices = [i for i in range(times.shape[0])][::5]
+            relevant_indices = [i for i in relevant_indices if i+5<times.shape[0]]
+
         final_dict = dict()
         for k, v in regular_dict.items():
             k_dict = dict()
             for w, vecs in v.items():
-                #new_vecs = numpy.average(vecs[:max_dict[w]], axis=0)
                 new_vecs = list()
                 for vec in vecs[:4]:
-                    subsampled_vec = numpy.array([numpy.average(vec[:, i:i+9], axis=1) for i in relevant_indices]).T
-                    new_vecs.append(subsampled_vec)
+                    ### Subsampling average happens here
+                    if not args.searchlight:
+                        vec = numpy.array([numpy.average(\
+                                          vec[:, i:i+5], axis=1) \
+                                          for i in relevant_indices]).T
+                    new_vecs.append(vec)
                 new_vecs = numpy.average(new_vecs, axis=0)
                 k_dict[w] = new_vecs
             final_dict[k] = k_dict
-        times = times[relevant_indices]
+
+        ### Correcting times if average subsampling happened
+        if not args.searchlight:
+            times = times[relevant_indices]
 
         return final_dict, times
