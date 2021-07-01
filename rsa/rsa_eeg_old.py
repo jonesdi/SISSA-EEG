@@ -37,6 +37,7 @@ parser.add_argument('--temporal_window_size', default=7, \
                     type=int, help='Indicates which similarities to use for comparison to the eeg similarities')
 args = parser.parse_args()
 
+        ''' 
 ### RSA
 
 if __name__ == '__main__':
@@ -64,7 +65,6 @@ if __name__ == '__main__':
     #rsa_per_subject(args, 3, computational_model)
     if args.permutation:
 
-        ''' 
         ### Preparing the batches
         batches = list()
         workers = os.cpu_count() - 1
@@ -98,7 +98,6 @@ if __name__ == '__main__':
                 for proc in processes:
                     proc.join()
     
-        '''
         pass
     else:
         processes = list()
@@ -114,3 +113,4 @@ if __name__ == '__main__':
 
         for proc in processes:
             proc.join()
+        '''

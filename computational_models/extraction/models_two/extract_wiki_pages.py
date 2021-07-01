@@ -9,7 +9,6 @@ words_path = os.path.join('..', '..', '..', \
 with open(words_path, encoding='utf-8') as i:
     all_words = [l.strip().split('\t') for l in i.readlines()][1:]
 it_words = [w[0] for w in all_words]
-en_words = [w[1] for w in all_words]
 
 ### Creating the output folder
 output_folder = os.path.join('..', '..', '..', 'resources', 'it_wiki_pages')

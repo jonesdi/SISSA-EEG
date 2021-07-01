@@ -1,7 +1,8 @@
-import os
+import collections
+import itertools
 import mne
 import numpy
-import collections
+import os
 import random
 
 class ExperimentInfo:
@@ -121,7 +122,7 @@ class SubjectData:
         ### If we're not running a searchlight, then
         ### subsample by averaging 5 time points
 
-        if not args.searchlight:
+        if args.analysis == 'classification':
             relevant_indices = [i for i in range(times.shape[0])][::5]
             relevant_indices = [i for i in relevant_indices if i+5<times.shape[0]]
 
@@ -132,7 +133,7 @@ class SubjectData:
                 new_vecs = list()
                 for vec in vecs[:4]:
                     ### Subsampling average happens here
-                    if not args.searchlight:
+                    if not args.analysis == 'classification':
                         vec = numpy.array([numpy.average(\
                                           vec[:, i:i+5], axis=1) \
                                           for i in relevant_indices]).T
@@ -142,7 +143,36 @@ class SubjectData:
             final_dict[k] = k_dict
 
         ### Correcting times if average subsampling happened
-        if not args.searchlight:
+        if args.analysis == 'classification':
             times = times[relevant_indices]
 
         return final_dict, times
+
+class ComputationalModel:
+ 
+    def __init__(self, args):
+    
+        self.model = args.computational_model
+        self.word_sims = self.load_word_sims(args)
+
+    def load_word_sims(self, args):
+
+        path = os.path.join('computational_models', 'similarities', \
+                            args.experiment_id, '{}.sims'.format(self_model))
+        assert os.path.exists(path)
+        with open(path, encoding='utf-8') as i:
+            lines = [l.strip().split('\t') for l in i.readlines()]
+        word_sims = [(sim[0], sim[1]) : float(sim[2]) for sim in lines]
+
+        return word_sims
+
+    def compute_pairwise(self, words):
+        
+        ordered_words = sorted(words)
+        combs = list(itertools.combinations(ordered_words, 2))
+        pairwise_similarities = list()
+        for c in combs:
+            sim = self.word_sims(c)
+            pairwise_similarities.append(sim)
+        
+        return ordered_words, combs, pairwise_similarities

@@ -2,6 +2,8 @@ import argparse
 
 from io_utils import ExperimentInfo, SubjectData
 from classification.time_resolved_classification import run_classification
+from rsa.rsa_searchlight import finalize_rsa_searchlight, run_searchlight
+from searchlight.searchlight_utils import SearchlightClusters()
 
 parser = argparse.ArgumentParser()
 
@@ -22,32 +24,55 @@ parser.add_argument('--data_split', required=True, \
                           to compare, whether by considering \
                           objective accuracy or subjective judgments')
 
-parser.add_argument('--searchlight', action='store_true', \
-                    default=False, help='Indicates whether to run \
-                                         a searchlight analysis or not')
-
 parser.add_argument('--data_folder', type=str, required=True, \
                     help='Folder where to find the preprocessed data')
 
-### Obsolete arguments
-'''
-parser.add_argument('--word_selection', default='all_words', \
-                    choices=['all_words', 'targets_only'], \
-                    help='Indicates whether to use \
-                          for the analyses only the targets \
-                          or all the words')
-
-parser.add_argument('--PCA', action='store_true', \
-                    default=False, help='Indicates whether to reduce \
-                                         dimensionality via PCA or not')
-'''
-
 args = parser.parse_args()
 
+general_output_folder = os.path.join('results', args.analysis, \
+                                     args.experiment_id, args.data_split)
+os.makedirs(general_output_folder, exist_ok=True)
+
 exp = ExperimentInfo(args)
+
+if args.analysis == 'rsa_searchlight':
+
+    comp_model = ComputationalModel(args)
+    searchlight_clusters = SearchlightClusters()
+    electrode_indices = [searchlight_clusters.neighbors[center] for center in range(128)]
+
 for n in range(exp.n_subjects):
+
     eeg = SubjectData(exp, n, args)
-    import pdb; pdb.set_trace()
+
     if args.analysis == 'classification':
+
         run_classification(exp, eeg, n, args)
 
+    if args.analysis == 'rsa_searchlight':
+
+        data = eeg.eeg_data
+
+        times = eeg.times
+        relevant_times = [t_i for t_i, t in enumerate(times) if t_i+16<len(times)][::8]
+        explicit_times = [times[t] for t in relevant_times]
+        clusters = [(e_s, t_s) for e_s in electrode_indices for t_s in relevant_times]
+
+        for awareness, vecs in data.items():    
+
+            words = list(vecs.keys())
+            ### Only employing conditions with at least 5 words
+            if len(words) >= 5:
+
+                ordered_words, combs, pairwise_similarities = comp_model.compute_pairwise(words)
+
+                with multiprocessing.Pool() as p:
+
+                    results = p.map(run_searchlight, \
+                                    [[eeg, comp_model, cluster, combs, pairwise_similarities] \
+                                                                      for cluster in clusters])
+                    p.terminate()
+                    p.join()
+
+                finalize_rsa_searchlight(results, relevant_times, explicit_times, \
+                                         general_output_folder,awareness, n)
