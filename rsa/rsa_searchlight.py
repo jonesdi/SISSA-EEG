@@ -1,6 +1,9 @@
 import numpy
+import os
 
-def finalize_rsa_searchlight(results, relevant_times, explicit_times, output_folder, n):
+from scipy import stats
+
+def finalize_rsa_searchlight(results, relevant_times, explicit_times, output_folder, awareness, n):
 
     ### Turning results into a single array
 
@@ -41,13 +44,13 @@ def run_searchlight(all_args):
 
     for word_one, word_two in word_combs:
 
-        eeg_one = eeg[word_one][0][places, start_time:start_time+16].flatten()
-        eeg_two = eeg[word_two][0][places, start_time:start_time+16].flatten()
+        eeg_one = eeg[word_one][places, start_time:start_time+16].flatten()
+        eeg_two = eeg[word_two][places, start_time:start_time+16].flatten()
 
         word_comb_score = stats.spearmanr(eeg_one, eeg_two)[0]
         eeg_similarities.append(word_comb_score)
 
-    rho_score = scipy.stats.spearmanr(eeg_similarities, pairwise_similarities)[0]
+    rho_score = stats.spearmanr(eeg_similarities, pairwise_similarities)[0]
     #print('done with {} {}'.format(places[0], start_time))
 
     return [(places[0], start_time), rho_score]

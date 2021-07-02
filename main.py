@@ -1,9 +1,15 @@
 import argparse
+import multiprocessing
+import os
+import scipy
 
-from io_utils import ExperimentInfo, SubjectData
+from tqdm import tqdm
+
+from io_utils import ComputationalModel, ExperimentInfo, SubjectData
 from classification.time_resolved_classification import run_classification
+from rsa.group_searchlight import run_group_searchlight
 from rsa.rsa_searchlight import finalize_rsa_searchlight, run_searchlight
-from searchlight.searchlight_utils import SearchlightClusters()
+from searchlight.searchlight_utils import SearchlightClusters
 
 parser = argparse.ArgumentParser()
 
@@ -13,8 +19,14 @@ parser.add_argument('--experiment_id', required=True, \
 
 parser.add_argument('--analysis', required=True, \
                     choices=['classification', \
-                             'rsa_searchlight'], \
+                             'rsa_searchlight', \
+                             'group_searchlight'], \
                     help='Indicates which analysis to perform')
+
+parser.add_argument('--computational_model', required=False, \
+                    choices=['log_cooc', 'ppmi', 'w2v', \
+                             'bert', 'wordnet'], \
+                    help='Which model?')
 
 parser.add_argument('--data_split', required=True, \
                     choices=['objective_accuracy', \
@@ -35,13 +47,19 @@ os.makedirs(general_output_folder, exist_ok=True)
 
 exp = ExperimentInfo(args)
 
+if args.analysis == 'group_searchlight':
+    clusters = SearchlightClusters()
+    run_group_searchlight(args, exp, clusters, general_output_folder)
+
 if args.analysis == 'rsa_searchlight':
 
+    if not args.computational_model:
+        raise RuntimeError('You need to specify a computational model!')
     comp_model = ComputationalModel(args)
     searchlight_clusters = SearchlightClusters()
     electrode_indices = [searchlight_clusters.neighbors[center] for center in range(128)]
 
-for n in range(exp.n_subjects):
+for n in tqdm(range(exp.n_subjects)):
 
     eeg = SubjectData(exp, n, args)
 
@@ -69,10 +87,11 @@ for n in range(exp.n_subjects):
                 with multiprocessing.Pool() as p:
 
                     results = p.map(run_searchlight, \
-                                    [[eeg, comp_model, cluster, combs, pairwise_similarities] \
+                                    [[vecs, comp_model, cluster, combs, pairwise_similarities] \
                                                                       for cluster in clusters])
                     p.terminate()
                     p.join()
 
                 finalize_rsa_searchlight(results, relevant_times, explicit_times, \
                                          general_output_folder,awareness, n)
+

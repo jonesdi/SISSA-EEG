@@ -1,5 +1,5 @@
 *__pycache__*
 resources/*
-*models*
 *confusion_matrices*
 *.swp
+results/*

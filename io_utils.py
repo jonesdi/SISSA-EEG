@@ -79,7 +79,7 @@ class SubjectData:
 
     def get_eeg_data(self, args):
 
-        epochs = mne.read_epochs(self.eeg_path)
+        epochs = mne.read_epochs(self.eeg_path, verbose=False)
         times = epochs.times
 
         assert len(epochs) == len(self.words)
@@ -140,7 +140,7 @@ class SubjectData:
                 new_vecs = list()
                 for vec in vecs[:4]:
                     ### Subsampling average happens here
-                    if not args.analysis == 'classification':
+                    if args.analysis == 'classification':
                         vec = numpy.array([numpy.average(\
                                           vec[:, i:i+5], axis=1) \
                                           for i in relevant_indices]).T
@@ -165,11 +165,11 @@ class ComputationalModel:
     def load_word_sims(self, args):
 
         path = os.path.join('computational_models', 'similarities', \
-                            args.experiment_id, '{}.sims'.format(self_model))
+                            args.experiment_id, '{}.sims'.format(self.model))
         assert os.path.exists(path)
         with open(path, encoding='utf-8') as i:
             lines = [l.strip().split('\t') for l in i.readlines()]
-        word_sims = [(sim[0], sim[1]) : float(sim[2]) for sim in lines]
+        word_sims = {(sim[0], sim[1]) : float(sim[2]) for sim in lines}
 
         return word_sims
 
@@ -179,7 +179,7 @@ class ComputationalModel:
         combs = list(itertools.combinations(ordered_words, 2))
         pairwise_similarities = list()
         for c in combs:
-            sim = self.word_sims(c)
+            sim = self.word_sims[c]
             pairwise_similarities.append(sim)
         
         return ordered_words, combs, pairwise_similarities
