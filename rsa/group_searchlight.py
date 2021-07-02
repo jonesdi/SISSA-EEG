@@ -43,13 +43,16 @@ def run_group_searchlight(args, exp, clusters, input_folder):
             file_path = os.path.join(input_folder, '{}_sub-{:02}.rsa'.format(awareness, n))
 
             if os.path.exists(file_path):
-                with open(os.path.join(input_folder, '{}_sub-{:02}.rsa'.format(awareness, n)), 'r') as i:
+                with open(file_path, 'r') as i:
                     lines = [l.strip().split('\t') for l in i.readlines()]
                 times = [float(w) for w in lines[0]]
                 electrodes = numpy.array([[float(v) for v in l] for l in lines[1:]]).T
                 all_subjects.append(electrodes)
             else:
-                missing_per_condition[awareness].append(n)
+                if awareness not in missing_per_condition.keys():
+                    missing_per_condition[awareness] = [n]
+                else:
+                    missing_per_condition[awareness].append(n)
 
         all_subjects = numpy.array(all_subjects)
 
@@ -62,7 +65,6 @@ def run_group_searchlight(args, exp, clusters, input_folder):
                                                            #n_permutations=8000, \
                                                            #n_permutations='all', \
                                                            )
-
         ### Plotting the results
 
         original_shape = t_stats.shape
@@ -82,7 +84,7 @@ def run_group_searchlight(args, exp, clusters, input_folder):
         #print(significant_times)
         #relevant_times
         tmin = times[0]
-        info = mne.create_info(ch_names=[v for k, v in SearchlightClusters().index_to_code.items()], \
+        info = mne.create_info(ch_names=[v for k, v in electrode_index_to_code.items()], \
                                #the step is 8 samples, so we divide the original one by 7
                                sfreq=256/8, \
                                ch_types='eeg')
@@ -109,3 +111,10 @@ def run_group_searchlight(args, exp, clusters, input_folder):
             pyplot.savefig(os.path.join(plot_path, \
                             '{}_{}_rsa_significant_points.png'.format(awareness, args.computational_model)), dpi=600)
             pyplot.clf()
+
+    with open(os.path.join(plot_path, 'missing_subjects_log.txt'), 'w') as o:
+        for k, v in missing_per_condition.items():
+            o.write('Condition\t{}\tmissing subjects\t'.format(k))
+            for sub in v:
+                o.write('{} '.format(sub))
+            o.write('\n')

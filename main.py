@@ -48,11 +48,15 @@ os.makedirs(general_output_folder, exist_ok=True)
 exp = ExperimentInfo(args)
 
 if args.analysis == 'group_searchlight':
+    general_output_folder = os.path.join(general_output_folder, args.computational_model)
+    os.makedirs(general_output_folder, exist_ok=True)
     clusters = SearchlightClusters()
     run_group_searchlight(args, exp, clusters, general_output_folder)
 
 if args.analysis == 'rsa_searchlight':
 
+    general_output_folder = os.path.join(general_output_folder, args.computational_model)
+    os.makedirs(general_output_folder, exist_ok=True)
     if not args.computational_model:
         raise RuntimeError('You need to specify a computational model!')
     comp_model = ComputationalModel(args)
