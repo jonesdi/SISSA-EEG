@@ -65,6 +65,8 @@ def run_group_searchlight(args, exp, clusters, input_folder):
                                                            #n_permutations=8000, \
                                                            #n_permutations='all', \
                                                            )
+
+        print(numpy.amin(p_values))
         ### Plotting the results
 
         original_shape = t_stats.shape
@@ -81,6 +83,7 @@ def run_group_searchlight(args, exp, clusters, input_folder):
 
         significant_indices = [i[0] for i in enumerate(numpy.nansum(log_p.T, axis=1)>0.) if i[1]==True]
         significant_times = [times[i] for i in significant_indices]
+        print(significant_times)
         #print(significant_times)
         #relevant_times
         tmin = times[0]

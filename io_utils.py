@@ -115,8 +115,8 @@ class SubjectData:
                if len(v_two) >= 4:
                    v_two = [vec.get_data()[0,:,:] for vec in v_two]
                    # Shuffling the vectors so as to break temporal corr
-                   shuffled = random.sample(v_two, k=len(v_two))
-                   word_dict[k_two] = shuffled
+                   #v_two = random.sample(v_two, k=len(v_two))
+                   word_dict[k_two] = v_two
 
             regular_dict[k] = word_dict
 
@@ -137,14 +137,22 @@ class SubjectData:
         for k, v in regular_dict.items():
             k_dict = dict()
             for w, vecs in v.items():
-                new_vecs = list()
-                for vec in vecs[:4]:
-                    ### Subsampling average happens here
-                    if args.analysis == 'classification':
+
+                ### Subsampling average happens here
+                if args.analysis == 'classification':
+                    new_vecs = list()
+                    for vec in vecs:
                         vec = numpy.array([numpy.average(\
                                           vec[:, i:i+5], axis=1) \
                                           for i in relevant_indices]).T
                     new_vecs.append(vec)
+                else:
+                    new_vecs = vecs.copy()
+
+                # Reducing the number of repetitions?
+                #n_repetitions = 4
+                #new_vecs = new_vecs[:n_repetitions]
+
                 new_vecs = numpy.average(new_vecs, axis=0)
                 k_dict[w] = new_vecs
             final_dict[k] = k_dict

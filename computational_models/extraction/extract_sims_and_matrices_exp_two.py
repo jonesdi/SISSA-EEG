@@ -1,6 +1,7 @@
 import argparse
 import gensim
 import itertools
+import logging
 import math
 import numpy
 import os
@@ -26,6 +27,8 @@ parser.add_argument('--experiment_id', required=True, \
                     help='Which experiment?')
 args = parser.parse_args()
 
+logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
+
 plot_path = os.path.join('..', 'confusion_matrices', args.experiment_id)
 os.makedirs(plot_path, exist_ok=True)
 
@@ -38,6 +41,8 @@ output_folder = os.path.join('..', 'similarities', args.experiment_id)
 os.makedirs(output_folder, exist_ok=True)
 
 wiki_folder = os.path.join('..', '..', 'resources', 'it_wiki_pages')
+
+logging.info ('Extracting Word2Vec')
 
 ### Loooking at Word2Vec similarities
 
@@ -74,19 +79,13 @@ file_path = os.path.join(plot_path, 'w2v_confusion_exp_{}.png'.format(args.exper
 confusion_matrix_simple(numpy.array(w2v_sims), it_words, title, file_path, text=False, \
                         vmin=numpy.amin(w2v_sims), vmax=numpy.amax(w2v_sims))
 
+
+logging.info ('Extracting co-occurrences and PPMIs')
 ### Collecting co-occurrences and PPMIs
 
+coocs = list()
 log_coocs = list()
 ppmis = list()
-
-'''
-with open(os.path.join('..', '..', '..', 'resources', \
-                       'itwac_absolute_frequencies.txt'),\
-                       encoding='utf-8') as i:
-    lines = [l.strip().split('\t') for l in i.readlines()]
-    total_words = int(re.sub(r'[^\d]+', '', lines[0][-1]))
-    word_freqs = {l[1] : float(l[3]) for l in lines[1:]}
-'''
 
 cooc_folder = os.path.join('..', '..', 'resources', \
                            'cooc_combined_corpora_window_5')
@@ -99,39 +98,44 @@ for word_one in it_words:
     with open(word_one_path, encoding='utf-8') as i:
         lines = [l.strip().split('\t') for l in i.readlines()][1:]
 
-    word_coocs = {l[0] : math.log(float(l[1]), 2) for l in lines}
+    word_coocs = {l[0] : float(l[1]) for l in lines}
+    word_log_coocs = {l[0] : math.log(float(l[1]), 2) for l in lines}
     word_ppmis = {l[0] : float(l[3]) for l in lines}
 
     for w in it_words:
         if w not in word_coocs.keys():
             word_coocs[w] = 0.
+            word_log_coocs[w] = 0.
             word_ppmis[w] = 0.
  
     word_one_coocs = [word_coocs[w] if w!=word_one else 0. for w in it_words]
+    word_one_log_coocs = [word_log_coocs[w] if w!=word_one else 0. for w in it_words]
     word_one_ppmis = [word_ppmis[w] if w!=word_one else 0. for w in it_words]
 
-    log_coocs.append(word_one_coocs)
+    coocs.append(word_one_coocs)
+    log_coocs.append(word_one_log_coocs)
     ppmis.append(word_one_ppmis)
 
+## Writing pure co-ocs
+with open(os.path.join(output_folder, 'cooc.sims'), 'w') as o:
+    for w_i_one, word_one in enumerate(it_words):
+        for w_i_two, word_two in enumerate(it_words):
+            o.write('{}\t{}\t{}\n'.format(word_one, word_two, coocs[w_i_one][w_i_two]))
+
+### Plotting the matrix for co-ocs
+
+title = 'Confusion matrix for ItWac co-occurrences'
+
+file_path = os.path.join(plot_path, 'cooc_confusion_exp_{}.png'.format(args.experiment_id))
+confusion_matrix_simple(numpy.array(coocs), it_words, title, file_path, text=False, \
+                        vmin=numpy.amin(coocs), vmax=numpy.amax(coocs))
+
+### Writing log co-ocs
 with open(os.path.join(output_folder, 'log_cooc.sims'), 'w') as o:
     for w_i_one, word_one in enumerate(it_words):
         for w_i_two, word_two in enumerate(it_words):
             o.write('{}\t{}\t{}\n'.format(word_one, word_two, log_coocs[w_i_one][w_i_two]))
 
-with open(os.path.join(output_folder, 'ppmi.sims'), 'w') as o:
-    for w_i_one, word_one in enumerate(it_words):
-        for w_i_two, word_two in enumerate(it_words):
-            ppmi_score = ppmis[w_i_one][w_i_two]
-            o.write('{}\t{}\t{}\n'.format(word_one, word_two, ppmi_score))
-'''
-### Plotting the matrix for co-ocs
-
-title = 'Confusion matrix for ItWac co-occurrences'
-
-file_path = os.path.join(plot_path, 'coocs_confusion_exp_two.png')
-confusion_matrix_simple(numpy.array(coocs), it_words, title, file_path, text=False, \
-                        vmin=numpy.amin(coocs), vmax=numpy.amax(coocs))
-'''
 ### Plotting the matrix for the log co-occurrences
 
 title = 'Confusion matrix for log co-occurrence'
@@ -140,6 +144,13 @@ file_path = os.path.join(plot_path, 'log_cooc_confusion_exp_{}.png'.format(args.
 confusion_matrix_simple(log_coocs, it_words, title, file_path, text=False, \
                         vmin=numpy.amin(log_coocs), vmax=numpy.amax(log_coocs))
 
+### Writing ppmis
+with open(os.path.join(output_folder, 'ppmi.sims'), 'w') as o:
+    for w_i_one, word_one in enumerate(it_words):
+        for w_i_two, word_two in enumerate(it_words):
+            ppmi_score = ppmis[w_i_one][w_i_two]
+            o.write('{}\t{}\t{}\n'.format(word_one, word_two, ppmi_score))
+
 ### Plotting the matrix for PPMI
 
 title = 'Confusion matrix for PPMI'
@@ -147,6 +158,8 @@ title = 'Confusion matrix for PPMI'
 file_path = os.path.join(plot_path, 'ppmi_confusion_exp_{}.png'.format(args.experiment_id))
 confusion_matrix_simple(numpy.array(ppmis), it_words, title, file_path, text=False, \
                         vmin=numpy.amin(ppmis), vmax=numpy.amax(ppmis))
+
+logging.info ('Extracting BERT')
 ### Looking at BERT similarities
 
 #model_name = "dbmdz/bert-base-italian-xxl-cased"
@@ -247,6 +260,7 @@ file_path = os.path.join(plot_path, 'bert_confusion_exp_{}.png'.format(args.expe
 confusion_matrix_simple(numpy.array(berts), it_words, title, file_path, text=False, \
                         vmin=numpy.amin(berts), vmax=numpy.amax(berts))
 
+logging.info('Extracting Wordnet')
 ### Collecting Wordnet similarities
 
 ### Using the list of it_words in English
@@ -287,12 +301,13 @@ file_path = os.path.join(plot_path, 'wordnet_confusion_exp_{}.png'.format(args.e
 confusion_matrix_simple(wordnets, it_words, title, file_path, text=False, \
                         vmin=numpy.amin(wordnets), vmax=numpy.amax(wordnets))
 
+logging.info('Plotting the confusion matrix comparing all the models')
 
 ### Plotting the models correlations
 
-models = [log_coocs, ppmis, w2v_sims, berts, wordnets]
+models = [coocs, log_coocs, ppmis, w2v_sims, berts, wordnets]
 #models = [w2v_sims, berts, wordnets]
-names = ['log co-occurrence', 'PPMI', 'Word2Vec', 'mBERT', 'WordNet']
+names = ['raw co-occurrence', 'log co-occurrence', 'PPMI', 'Word2Vec', 'mBERT', 'WordNet']
 #names = ['Word2Vec', 'BERT', 'WordNet']
 
 flattened = list()
