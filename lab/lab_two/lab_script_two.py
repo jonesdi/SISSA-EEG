@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import numpy
 import os
 import psychopy
@@ -65,23 +64,10 @@ messages = Messages()
 words, questions, answers = generate_runs(animals_and_objects)
 
 # Generating the screen
-win = visual.Window(size=[1920,1080], fullscr=True, color=[-1,-1,-1], units='pix', checkTiming=True)
+win = visual.Window(size=[1920,1080], fullscr=False, color=[-1,-1,-1], units='pix', checkTiming=True)
 
 # Checking for the current screen's  frame rate
 
-=======
-import psychopy
-from numpy import random
-
-from psychopy import clock, event, visual
-
-visualNoiseSize = 256 # Dimension in pixels of visual noise. Must be a power of 2
-noiseSize = 256
-noiseTexture = random.rand(visualNoiseSize,visualNoiseSize)
-#*2-1
-
-win = visual.Window(size=[1920,1080], fullscr=False, color=[-1,-1,-1], units='pix', checkTiming=True)
->>>>>>> 42caaf319c5b484069039b8dfbd32c15da508fc8
 print('Frame rate detected: {}'.format(win.getActualFrameRate()))
 actualFrameMs = win.getMsPerFrame(nFrames=180)[2]
 predictedFrameMs = win.monitorFramePeriod
@@ -130,9 +116,9 @@ win.flip()
 
 event.waitKeys(keyList=['space'])
 
-# For the trial, one random run, 16 random trials
-r = random.randint(0, 23)
-random_trials = random.sample(list(range(33)), k=23)
+# For the trial, one random run, 16/24 random trials
+r = random.randint(0, 8)
+random_trials = random.sample(list(range(33)), k=8)
 
 # Starting from 0.5, then using the result as a starting point
 new_opacity = 0.5
@@ -282,7 +268,7 @@ for r in range(24):
         if subjective_answer == '1':
             new_opacity = min(1., old_opacity+.02)
         elif subjective_answer == '2':
-            new_opacity = min(1., old_opacity+.01)
+            new_opacity = min(1., old_opacity-.01)
         elif subjective_answer == '3':
             new_opacity = max(0., old_opacity-.02)
         
@@ -316,7 +302,7 @@ for r in range(24):
     out_file = os.path.join(out_folder, 'sub-{:02}_run-{:02}.events'.format(\
                                          subject_number, r+1))
                                          
-    with open(out_file, 'w') as o:
+    with open(out_file, mode='w', encoding='utf-8') as o:
         o.write('Current word\t'\
                 'Current question\t'\
                 'PAS score\t'\
