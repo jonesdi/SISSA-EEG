@@ -65,7 +65,7 @@ messages = Messages()
 words, questions, answers = generate_runs(animals_and_objects)
 
 # Generating the screen
-win = visual.Window(size=[1920,1080], fullscr=False, color=[-1,-1,-1], units='pix', checkTiming=True)
+win = visual.Window(size=[1920,1080], fullscr=True, color=[-1,-1,-1], units='pix', checkTiming=True)
 
 # Checking for the current screen's  frame rate
 
@@ -88,7 +88,6 @@ predictedFrameMs = win.monitorFramePeriod
 print('Predicted milliseconds per frame: {}'.format(predictedFrameMs*1000.))
 print('Actual milliseconds per frame: {}'.format(actualFrameMs))
 
-<<<<<<< HEAD
 # Time utilities
 one_second = int(win.getActualFrameRate())
 minuteCounter = {step : value for step, value in enumerate([abs(i) for i in range(-59, 1) for k in range(one_second)])}
@@ -132,8 +131,8 @@ win.flip()
 event.waitKeys(keyList=['space'])
 
 # For the trial, one random run, 16 random trials
-r = random.randint(0, 15)
-random_trials = random.sample(list(range(33)), k=16)
+r = random.randint(0, 23)
+random_trials = random.sample(list(range(33)), k=23)
 
 # Starting from 0.5, then using the result as a starting point
 new_opacity = 0.5
@@ -215,7 +214,7 @@ event.waitKeys(keyList=['space'])
 subject_results = list()
 
 #for r in range(1):
-for r in range(16):
+for r in range(24):
     
     run_results = list()
 
@@ -334,7 +333,7 @@ for r in range(16):
     subject_results.append(run_results)
     
     # Rest one minute
-    if r < 15:
+    if r < 23:
         for _ in range(one_second*60): 
             countdown = minuteCounter[_]
             textStimulus.text = messages.rest(r+1, countdown)
@@ -355,39 +354,3 @@ for r in range(16):
     textStimulus.draw()
     win.flip()
     core.wait(5)
-=======
-loadingMessage = 'Now loading...'
-
-textStimulus = visual.TextStim(win, loadingMessage, color=[.8,.8,.8], pos=[0,0], ori=0, wrapWidth=1080, height=40, font='Calibri')
-textStimulus.draw()
-
-visualNoise = visual.GratingStim(win=win, tex=noiseTexture, size=(visualNoiseSize,256), units='pix', \
-                                 interpolate=False, \
-                                 mask='circle')
-visualNoise.draw()
-
-t = clock.Clock()
-
-win.clearBuffer()
-
-win.flip()
-
-for rep in range(10):
-    textStimulus.opacity = 0.5
-    for i in range(30):
-        
-        visualNoise.draw()
-        win.flip()
-    t.reset()
-    for i in range(2):
-        textStimulus.draw()
-        win.flip()
-    print(t.getTime())
-        
-    for i in range(30):
-        visualNoise.draw()
-        win.flip()
-        
-win.close()
-#event.waitKeys(keyList=['space'])
->>>>>>> 42caaf319c5b484069039b8dfbd32c15da508fc8

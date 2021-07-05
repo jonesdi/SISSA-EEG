@@ -18,6 +18,7 @@ from tqdm import tqdm
 def run_group_searchlight(args, exp, clusters, input_folder):
 
     input_folder = input_folder.replace('group', 'rsa')
+    input_folder = os.path.join(input_folder, args.computational_model)
     missing_per_condition = dict()
 
     electrode_index_to_code = clusters.index_to_code

@@ -48,8 +48,6 @@ os.makedirs(general_output_folder, exist_ok=True)
 exp = ExperimentInfo(args)
 
 if args.analysis == 'group_searchlight':
-    general_output_folder = os.path.join(general_output_folder, args.computational_model)
-    os.makedirs(general_output_folder, exist_ok=True)
     clusters = SearchlightClusters()
     run_group_searchlight(args, exp, clusters, general_output_folder)
 
