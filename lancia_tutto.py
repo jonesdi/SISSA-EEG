@@ -11,8 +11,9 @@ for d in data_split:
         logging.info([d, m])
         os.system('python3 main.py '\
                     #'--analysis rsa_searchlight '\
-                    '--analysis group_searchlight '\
+                    #'--analysis group_searchlight '\
+                    '--analysis behavioural '\
                     '--data_split {} '\
                     '--computational_model {} '\
-                    '--data_folder /import/cogsci/andrea/dataset/neuroscience/conscious_unconscious_processing/ '\
-                    '--experiment_id one'.format(d, m))
+                    '--data_folder /import/cogsci/andrea/dataset/neuroscience/conscious_unconscious_processing/two/raw_data '\
+                    '--experiment_id two'.format(d, m))

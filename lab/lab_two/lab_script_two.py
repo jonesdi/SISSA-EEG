@@ -33,29 +33,8 @@ if in_the_lab:
     outputPort.setData(0)
 
 # Read words and properties
+word_to_trigger = read_words_and_triggers()
 
-with open('chosen_features.txt', encoding='utf8') as i:
-    lines = [l.strip().split('\t') for l in i.readlines()][1:]
-
-# Checking all's fine with the stimuli
-assert len(lines) == 32
-animals = {l[0] : [f.replace('_', ' ') for f in l[1:]][:3] for l in lines[:16]}
-objects = {l[0] : [f.replace('_', ' ') for f in l[1:]][:3] for l in lines[16:]}
-
-assert len(animals) == len(objects)
-animal_feat_num = max([len(v) for k, v in animals.items()])
-object_feat_num = max([len(v) for k, v in objects.items()])
-assert animal_feat_num == object_feat_num
-
-# Finalizing the list of stimuli
-animals_and_objects = animals.copy()
-animals_and_objects.update(objects)
-
-# Generating triggers
-
-word_to_trigger = {w : w_i+1 for w_i, w in enumerate(animals_and_objects.keys())}
-word_to_trigger.update({'' : len(word_to_trigger)+1})
-#print(word_to_trigger)
 
 # Loading the messages
 

@@ -6,6 +6,7 @@ import scipy
 from tqdm import tqdm
 
 from io_utils import ComputationalModel, ExperimentInfo, SubjectData
+from behavioural.behavioural_analyses import read_results
 from classification.time_resolved_classification import run_classification
 from rsa.group_searchlight import run_group_searchlight
 from rsa.rsa_searchlight import finalize_rsa_searchlight, run_searchlight
@@ -19,6 +20,7 @@ parser.add_argument('--experiment_id', required=True, \
 
 parser.add_argument('--analysis', required=True, \
                     choices=['classification', \
+                             'behavioural', \
                              'rsa_searchlight', \
                              'group_searchlight'], \
                     help='Indicates which analysis to perform')
@@ -46,6 +48,10 @@ general_output_folder = os.path.join('results', args.analysis, \
 os.makedirs(general_output_folder, exist_ok=True)
 
 exp = ExperimentInfo(args)
+
+if args.analysis == 'behavioural':
+    results = read_results(args, exp)
+    import pdb; pdb.set_trace()
 
 if args.analysis == 'group_searchlight':
     clusters = SearchlightClusters()
