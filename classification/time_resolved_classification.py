@@ -24,9 +24,9 @@ def run_classification(exp, eeg, n, args):
 
     folds = 8000
 
-    out_path = os.path.join('classification_per_subject', \
-                            'sub-{:02}'.format(n+1))
-    os.makedirs(out_path, exist_ok=True)
+    out_path = os.path.join('results', args.analysis, \
+                            args.experiment_id, args.data_split)
+    assert os.path.exists(out_path)
 
     for awareness, vecs in data.items():    
 
@@ -38,6 +38,9 @@ def run_classification(exp, eeg, n, args):
         if total_number_words >= 5: ### Employing conditions with at least 10 words
             current_data = {k : v[:total_number_words] for k, v in current_data.items()}
             number_test_samples = max(1, int(0.1 * total_number_words))
+            if not number_test_samples % 2:
+                number_test_samples += 1
+            assert number_test_samples % 2
             word_splits = list(itertools.combinations(list(range(total_number_words)), number_test_samples))
             test_splits = list(itertools.product(word_splits, repeat=2))
 

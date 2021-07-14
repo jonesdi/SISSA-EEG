@@ -53,7 +53,7 @@ class ExperimentInfo:
 
             lines = [lines[i] for i in ordered_indices]
 
-        words_to_cats = {l[0] : cat_index for l in lines}
+        words_to_cats = {l[0] : l[cat_index] for l in lines}
 
         return words_to_cats
 
@@ -62,15 +62,17 @@ class SubjectData:
     def __init__(self, experiment_info, n, args):
         self.eeg_path = experiment_info.paths[n][0]
         self.events_path = experiment_info.paths[n][1]
-        self.words, self.accuracies, self.reports = self.get_events()
+        self.words, self.accuracies, self.reports = self.get_events(args)
         self.eeg_data, self.times = self.get_eeg_data(args)
 
-    def get_events(self):
+    def get_events(self, args):
         awareness_mapper = {'1' : 'low', \
-                  '2' : 'medium', \
-                  '3' : 'high'}
+                            '2' : 'medium', \
+                            '3' : 'high'}
         with open(self.events_path) as i:
             events = [l.strip().split('\t') for l in i.readlines()][1:]
+        if args.experiment_id == 'two':
+            events = [l for l in events if len(l) == 3] 
         words = [l[0] for l in events]
         accuracies = [l[1] for l in events]
         reports = [awareness_mapper[l[2]] for l in events]
@@ -82,7 +84,7 @@ class SubjectData:
         epochs = mne.read_epochs(self.eeg_path, verbose=False)
         times = epochs.times
 
-        assert len(epochs) == len(self.words)
+        #assert len(epochs) == len(self.words)
 
         if args.data_split == 'objective_accuracy':
             splits = list(set(self.accuracies))
@@ -92,7 +94,7 @@ class SubjectData:
             splits = list(set(self.reports))
             indices = {s : [i for i, v in enumerate(self.reports) if v==s] for s in splits}
 
-        assert numpy.sum([len(v) for k, v in indices.items()]) == len(self.words)
+        #assert numpy.sum([len(v) for k, v in indices.items()]) == len(self.words)
 
         eeg_data = collections.defaultdict(lambda : collections.defaultdict(list))
         for s, inds in indices.items():
