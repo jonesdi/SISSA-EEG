@@ -53,7 +53,7 @@ def possibilities(args):
 
 def read_files(args):
 
-    subjects = [s for s in range(1, 7)]
+    subjects = [s for s in range(1, 14) if s not in []]
 
     data_dict = possibilities(args)
 

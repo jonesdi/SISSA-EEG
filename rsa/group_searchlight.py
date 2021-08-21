@@ -17,14 +17,17 @@ from tqdm import tqdm
 
 def run_group_searchlight(args, exp, clusters, input_folder):
 
+    pyplot.rcParams['figure.constrained_layout.use'] = True
     input_folder = input_folder.replace('group', 'rsa')
     input_folder = os.path.join(input_folder, args.computational_model)
+
     missing_per_condition = dict()
+    present_per_condition = dict()
 
     electrode_index_to_code = clusters.index_to_code
     mne_adj_matrix = clusters.mne_adjacency_matrix
 
-    plot_path = os.path.join('results', 'group_searchlight', \
+    plot_path = os.path.join('plots', 'group_searchlight', \
                              args.experiment_id, args.data_split)
     os.makedirs(plot_path, exist_ok=True)
 
@@ -56,6 +59,7 @@ def run_group_searchlight(args, exp, clusters, input_folder):
                     missing_per_condition[awareness].append(n)
 
         all_subjects = numpy.array(all_subjects)
+        present_per_condition[awareness] = all_subjects.shape[0]
 
         t_stats, _, \
         p_values, _ = mne.stats.spatio_temporal_cluster_1samp_test(all_subjects, \
@@ -116,9 +120,12 @@ def run_group_searchlight(args, exp, clusters, input_folder):
                             '{}_{}_rsa_significant_points.png'.format(awareness, args.computational_model)), dpi=600)
             pyplot.clf()
 
-    with open(os.path.join(plot_path, 'missing_subjects_log.txt'), 'w') as o:
+    with open(os.path.join(plot_path, 'missing_present_subjects_log.txt'), 'w') as o:
         for k, v in missing_per_condition.items():
             o.write('Condition\t{}\tmissing subjects\t'.format(k))
             for sub in v:
                 o.write('{} '.format(sub))
+            o.write('\n')
+            o.write('Condition\t{}\tpresent subjects\t'.format(k))
+            o.write('{} '.format(present_per_condition[k]))
             o.write('\n')

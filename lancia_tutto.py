@@ -3,19 +3,21 @@ import os
 
 logging.basicConfig(format='%(asctime)s %(message)s', datefmt='%m/%d/%Y %I:%M:%S %p', level=logging.INFO)
 
-models = ['cooc', 'log_cooc', 'ppmi', 'w2v', 'bert', 'wordnet']
-models = ['cooc']
+models = ['log_cooc', 'ppmi', 'w2v', 'bert', 'wordnet']
+models = ['bert']
 data_split = ['objective_accuracy', 'subjective_judgments']
 
 for d in data_split:
     for m in models:
         logging.info([d, m])
         os.system('python3 main.py '\
-                    #'--analysis rsa_searchlight '\
-                    '--analysis classification '\
+                    #'--analysis group_searchlight '\
+                    '--analysis behavioural '\
+                    #'--analysis classification '\
                     #'--analysis rsa_searchlight '\
                     '--data_split {} '\
                     '--computational_model {} '\
                     '--data_folder /import/cogsci/andrea/dataset/neuroscience/conscious_unconscious_processing/two/preprocessed_data '\
-                    '--plot '\
+                    '--data_folder /import/cogsci/andrea/dataset/neuroscience/conscious_unconscious_processing/two/raw_data '\
+                    #'--plot '\
                     '--experiment_id two'.format(d, m))

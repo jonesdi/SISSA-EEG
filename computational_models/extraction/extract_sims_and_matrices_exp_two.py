@@ -192,7 +192,8 @@ for w in tqdm(it_words):
         ### Averaging all layers and all sentences
 
         mention = list()
-        for layer in range(1, 13):
+        #for layer in range(1, 13):
+        for layer in [1]:
             layer_vec = output['hidden_states'][layer][0, 1:-1, :].detach().numpy()
             mention.append(numpy.average(layer_vec, axis=0))
         mention = numpy.average(mention, axis=0)

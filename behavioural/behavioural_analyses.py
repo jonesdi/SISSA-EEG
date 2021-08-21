@@ -23,7 +23,7 @@ def read_results(args, exp):
     container_dict = dict()
    
     #for s in range(1, exp.n_subjects+1):
-    for s in range(1, 6+1):
+    for s in range(1, 15+1):
 
         sub_folder = os.path.join(args.data_folder, \
                          'sub-{:02}'.format(s), \
@@ -45,9 +45,9 @@ def read_results(args, exp):
             
             ### Fix for experiment 2
             for l in data:
-                assert len(l) == len(header)
-                #if len(l) < len(header):
-                    #l.insert(0, '_')
+                if len(l) < len(header):
+                    l.insert(0, '_')
+            assert len(l) == len(header)
             ### Adding the data
             for l in data:
                 for i in relevant_indices:
@@ -82,6 +82,7 @@ def read_results(args, exp):
                 for err_run, right_run in {1 : 17, 2 : 18, 4 : 19, 5: 20, 6: 21, 7 : 22, 8: 23, 9: 24}.items():
                     f = f.replace('sub-02_run-{:02}'.format(err_run), 'sub-01_run-{:02}'.format(right_run))
             file_path = os.path.join(file_folder, f)
+            assert not os.path.exists(file_path)
             
             with open(file_path,  'w', encoding='utf-8') as o:
                 for h in header:

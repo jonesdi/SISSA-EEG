@@ -86,7 +86,7 @@ else:
             eeg = SubjectData(exp, n, args)
 
             if args.analysis == 'classification':
-
+            
                 run_classification(exp, eeg, n, args)
 
             if args.analysis == 'rsa_searchlight':

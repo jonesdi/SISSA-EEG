@@ -55,12 +55,23 @@ def preprocess_eeg(s):
         pas_index = 2
         accuracy_index = 4
 
+    runs = list(range(1, n_runs))
+    ### Fix for subject 14 in exp two
+    if args.experiment_id == 'two' and s == 14:
+        runs = [r for r in runs if r != 3]
+
     ### Preprocessing run by run
-    for r in range(1, n_runs):
+    for r in runs:
 
         ### Loading run raw data
         run_path = os.path.join(eeg_folder, 'sub-{:02}_run-{:02}.bdf'.format(s, r))
-        assert os.path.exists(run_path)
+        try:
+            assert os.path.exists(run_path)
+        ### Fixing for experiment two
+        except AssertionError:
+            if s == 10:
+                run_path = run_path.replace('sub-10_eeg/', 'sub_10-eeg/').replace('run-', 'eeg-')
+                os.path.exists(run_path)
 
         raw_raw = mne.io.read_raw_bdf(run_path, preload=True, \
                                       eog=eog_channels, \
@@ -80,8 +91,8 @@ def preprocess_eeg(s):
         data = lines[1:]
         if args.experiment_id == 'two':
             for l in data:
-                #if len(l) < len(header):
-                    #l.insert(0, '')
+                if len(l) < len(header):
+                    l.insert(0, '')
                 assert len(l) == len(header)
                 if l[0] == '_':
                     l[0] = ''
@@ -97,9 +108,10 @@ def preprocess_eeg(s):
         if current_events.shape[0] == 0:
             pass
         else:
-            if current_events.shape[0] < n_trials:
+            real_n_trials = n_trials if s!=14 and args.experiment_id!=14 else n_trials*2
+            if current_events.shape[0] < real_n_trials:
                 print('sub {} r {} missing some trials'.format(s, r))
-            assert current_events.shape[0] <= n_trials
+            assert current_events.shape[0] <= real_n_trials
             ### Correcting for a mistake in data acquisition
             if s == 1 and args.experiment_id == 'one':
                 events_from_file = [d for d in data if int(d[3]) != 10]
@@ -129,7 +141,7 @@ def preprocess_eeg(s):
             assert len(events_from_file) == current_events.shape[0]
             for trig_i in range(len(events_from_file)):
                 assert events_from_file[trig_i][-1] == current_events[trig_i, -1]
-                
+       
             ### Cropping so as to remove useless recorded samples before/after testing
             sampling = raw_raw.info['sfreq']
             minimum_t = max((current_events[0][0] / sampling) -0.5, 0)
@@ -260,14 +272,14 @@ random_state = 1
 
 number_of_subjects = len(os.listdir(args.data_folder))
 
-targets = list(range(1, number_of_subjects+1))
+#targets = list(range(1, number_of_subjects+1))
+targets = list(range(15, 15+1))
 
+'''
 with multiprocessing.Pool() as p:
-
     p.map(preprocess_eeg, targets)
     p.terminate()
     p.join()
 '''
 for target in targets:
     preprocess_eeg(target)
-'''
