@@ -21,12 +21,14 @@ sys.path.append(additional_path)
 
 from utils_two import read_words_and_triggers
 
-
 def preprocess_eeg(s):
 
     epochs_list = list()
     present_events = list()
+    '''
+    ### Useless
     all_events = dict()
+    '''
 
     word_to_trigger = read_words_and_triggers(additional_path=additional_path)
 
@@ -67,6 +69,7 @@ def preprocess_eeg(s):
         run_path = os.path.join(eeg_folder, 'sub-{:02}_run-{:02}.bdf'.format(s, r))
         try:
             assert os.path.exists(run_path)
+
         ### Fixing for experiment two
         except AssertionError:
             if s == 10:
@@ -98,7 +101,14 @@ def preprocess_eeg(s):
                     l[0] = ''
                 l.append(word_to_trigger[l[0]])
             
+        '''
+        ### Useless
         all_events_dict = {h : [l[h_i] for l in data] for h_i, h in enumerate(header)}
+        all_events_dict['trigger'] = list()
+        for w in all_events_dict['Current word']:
+            all_events_dict['trigger'].append(word_to_trigger[w])
+        assert len(list(set([len(v) for k, v in all_events_dict.items()]))) == 1
+        '''
 
         current_events = mne.find_events(raw_raw)
         ### Correcting for spurious events
@@ -108,7 +118,8 @@ def preprocess_eeg(s):
         if current_events.shape[0] == 0:
             pass
         else:
-            real_n_trials = n_trials if s!=14 and args.experiment_id!=14 else n_trials*2
+            ## Check again the next line
+            real_n_trials = n_trials if (s!=14 and args.experiment_id=='two') else n_trials*2
             if current_events.shape[0] < real_n_trials:
                 print('sub {} r {} missing some trials'.format(s, r))
             assert current_events.shape[0] <= real_n_trials
@@ -222,17 +233,21 @@ def preprocess_eeg(s):
 
             epochs_list.append(epochs) 
 
+            '''
+            ### Useless
             ### Adding current events dictionary to general events dictionary before dropping to data frame
             for k, v in all_events_dict.items():
                 if k not in all_events.keys():
                     all_events[k] = v
                 else:
                     all_events[k].extend(v)
+            '''
 
             ### Preparing the list of epochs actually present in the epochs
             for e_i, e in enumerate(epochs.drop_log):
                 if len(e) == 0:
                     current_epoch = events_from_file[e_i]
+                    assert epochs.events[e_i][-1] == word_to_trigger[current_epoch[0]]
                     present_events.append([current_epoch[word_index], \
                                            current_epoch[accuracy_index], \
                                            current_epoch[pas_index], \
@@ -240,7 +255,10 @@ def preprocess_eeg(s):
 
     all_epochs = mne.concatenate_epochs(epochs_list)
     assert len(all_epochs) == len(present_events)
+    for ev, erp in zip(present_events, all_epochs.events):
+        assert word_to_trigger[ev[0]] == erp[-1]
     
+    '''
     ### Writing epochs to file
     epochs_file = 'sub-{:02}_epo.fif'.format(s)
     all_epochs.save(os.path.join(output_folder, epochs_file), \
@@ -253,6 +271,7 @@ def preprocess_eeg(s):
             for v in e:
                 o.write('{}\t'.format(v))
             o.write('\n')
+    '''
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_folder', type=str, \
@@ -272,8 +291,8 @@ random_state = 1
 
 number_of_subjects = len(os.listdir(args.data_folder))
 
-#targets = list(range(1, number_of_subjects+1))
-targets = list(range(15, 15+1))
+targets = list(range(1, number_of_subjects+1))
+#targets = list(range(15, 15+1))
 
 '''
 with multiprocessing.Pool() as p:

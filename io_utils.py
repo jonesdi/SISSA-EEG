@@ -60,10 +60,11 @@ class ExperimentInfo:
 class SubjectData:
 
     def __init__(self, experiment_info, n, args):
+        self.exp = experiment_info
         self.eeg_path = experiment_info.paths[n][0]
         self.events_path = experiment_info.paths[n][1]
         self.words, self.accuracies, self.reports = self.get_events(args)
-        self.eeg_data, self.times = self.get_eeg_data(args)
+        self.eeg_data, self.times, self.permutations = self.get_eeg_data(args)
 
     def get_events(self, args):
         awareness_mapper = {'1' : 'low', \
@@ -128,18 +129,21 @@ class SubjectData:
         for w in final_words:
             max_dict[w] = min([len(v[w]) for k, v in regular_dict.items()])
         '''
+        '''
         ### If we're not running a searchlight, then
         ### subsample by averaging 5 time points
 
         if args.analysis == 'classification':
             relevant_indices = [i for i in range(times.shape[0])][::5]
             relevant_indices = [i for i in relevant_indices if i+5<times.shape[0]]
+        '''
 
         final_dict = dict()
         for k, v in regular_dict.items():
             k_dict = dict()
             for w, vecs in v.items():
 
+                '''
                 ### Subsampling average happens here
                 if args.analysis == 'classification':
                     new_vecs = list()
@@ -150,6 +154,8 @@ class SubjectData:
                     new_vecs.append(vec)
                 else:
                     new_vecs = vecs.copy()
+                '''
+                new_vecs = vecs.copy()
 
                 # Reducing the number of repetitions?
                 #n_repetitions = 4
@@ -159,11 +165,61 @@ class SubjectData:
                 k_dict[w] = new_vecs
             final_dict[k] = k_dict
 
+        '''
         ### Correcting times if average subsampling happened
         if args.analysis == 'classification':
             times = times[relevant_indices]
+        '''
+        if 'classification' not in args.analysis:
+            permutations_dict = dict()
+        else:
+            class_dict = dict()
+            permutations_dict = dict()
 
-        return final_dict, times
+            cats = list(self.exp.cats_to_words.keys())
+       
+            for awareness, vecs in final_dict.items():    
+
+                current_data = {c : list() for c in cats}
+                for w, vec in vecs.items():
+                    current_data[self.exp.words_to_cats[w]].append(vec)
+               
+                ### Shuffling the exemplars within each category
+                current_data = {k : random.sample(v, k=len(v)) for k, v in current_data.items()}
+
+                ### Computing the test combinations
+
+                total_number_words = min([len(v) for k, v in current_data.items()])
+                #if total_number_words >= 5: ### Employing conditions with at least 5 words
+                if total_number_words < 10: ### Employing conditions with at least 10 words
+                    if 'searchlight' not in args.analysis:
+                        print('not enough words for: sub {}, condition {}'.format(n+1, awareness))
+                else:
+                    current_data = {k : v[:total_number_words] for k, v in current_data.items()}
+
+                    number_test_samples = max(1, round(0.2 * total_number_words), 0)
+                    
+                    #if number_test_samples % 2 == 1:
+                    #    number_test_samples += 1
+                    #assert number_test_samples % 2 == 0
+                    word_splits = list(itertools.combinations(list(range(total_number_words)), number_test_samples))
+                    test_splits = list(itertools.product(word_splits, repeat=2))
+                    test_splits = random.sample(test_splits, \
+                                           k=len(test_splits))
+
+                    del word_splits
+                    folds = 8192 if \
+                            args.analysis == 'classification' \
+                            else 1024
+                    test_splits = test_splits[:folds]
+
+                    class_dict[awareness] = current_data
+                    permutations_dict[awareness] = test_splits
+            
+            del final_dict
+            final_dict = class_dict
+
+        return final_dict, times, permutations_dict
 
 class ComputationalModel:
  

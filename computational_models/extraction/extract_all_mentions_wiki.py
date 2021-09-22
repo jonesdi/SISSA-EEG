@@ -3,7 +3,7 @@ from tqdm import tqdm
 
 ### Reading the list of words
 
-with open('../experiment_two/extract_word_list/chosen_words.txt') as i:
+with open('lab/lab_two/chosen_words.txt') as i:
     words = [l.strip().split('\t')[0] for l in i.readlines()][1:]
 
 wiki_files_folder = '/import/cogsci/andrea/dataset/corpora/wikipedia_italian/annotated_it_wiki_article_by_article'
@@ -12,7 +12,7 @@ word_mapper = {w : w for w in words}
 
 all_files = list([os.path.join(root, f) for root, direc, files in os.walk(wiki_files_folder) for f in files])
 
-output_folder = 'it_wiki_sentences_per_word'
+output_folder = os.path.join('it_wiki_sentences_per_word')
 os.makedirs(output_folder, exist_ok=True)
 
 ### Not acquiring sentences if file already existing

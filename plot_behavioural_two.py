@@ -5,14 +5,13 @@ import os
 from matplotlib import pyplot
 from scipy import stats
 
-plot_path = os.path.join('behavioural', 'two', 'plots')
+plot_path = os.path.join('plots', 'two', 'behavioural')
 os.makedirs(plot_path, exist_ok=True)
 
-file_path = os.path.join('behavioural', 'two', 'experiment_two.csv')
+file_path = os.path.join('results', 'two', 'behavioural', \
+                                      'experiment_two.csv')
 with open(file_path) as i:
     lines = [l.strip().split(',') for l in i.readlines()]
-
-#import pdb; pdb.set_trace()
 
 headers = lines[0]
 data = lines[1:]
@@ -125,10 +124,11 @@ fig, ax = pyplot.subplots()
 
 #ax.violinplot([p_r for k, p_r in results.items()])
 for k_p_r_i, k_p_r in enumerate(results.items()):
-    ax.scatter([i+1 for i in range(len(k_p_r[1]))], k_p_r[1], \
+    ax.scatter([i+1+k_p_r_i*0.1 for i in range(len(k_p_r[1]))], k_p_r[1], \
                             label=mapper[k_p_r[0]])
 ax.legend()
-ax.set_xticks(subjects)
+ax.set_xticks([s+0.1 for s in subjects])
+ax.set_xticklabels(subjects)
 title = 'AUC scores across subjects'
 ax.set_title(title, pad=40.)
 ax.legend(loc=(0.25, 1.025), ncol=3)

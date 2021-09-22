@@ -18,7 +18,14 @@ from tqdm import tqdm
 def run_group_searchlight(args, exp, clusters, input_folder):
 
     pyplot.rcParams['figure.constrained_layout.use'] = True
-    input_folder = input_folder.replace('group', 'rsa')
+    if args.analysis == 'group_classification_searchlight':
+        input_folder = input_folder.replace(\
+                       'group_classification', 'classification')
+        args.computational_model = ''
+        marker = 'classification'
+    else:
+        input_folder = input_folder.replace('group_rsa', 'rsa')
+        marker = '{}_rsa'.format(args.computational_model)
     input_folder = os.path.join(input_folder, args.computational_model)
 
     missing_per_condition = dict()
@@ -27,7 +34,7 @@ def run_group_searchlight(args, exp, clusters, input_folder):
     electrode_index_to_code = clusters.index_to_code
     mne_adj_matrix = clusters.mne_adjacency_matrix
 
-    plot_path = os.path.join('plots', 'group_searchlight', \
+    plot_path = os.path.join('plots', args.analysis, \
                              args.experiment_id, args.data_split)
     os.makedirs(plot_path, exist_ok=True)
 
@@ -71,11 +78,21 @@ def run_group_searchlight(args, exp, clusters, input_folder):
                                                            #n_permutations='all', \
                                                            )
 
+        original_shape = t_stats.shape
+        tmin = times[0]
+        info = mne.create_info(\
+               ch_names=[v for k, v in \
+               electrode_index_to_code.items()], \
+               #the step is 8 samples, so we divide the original one by 7
+               sfreq=256/8, \
+               ch_types='eeg')
+        montage=mne.channels.make_standard_montage('biosemi128')
+
+        ### Plotting only statistically significant time points
+
         print(numpy.amin(p_values))
         ### Plotting the results
 
-        original_shape = t_stats.shape
-        
         log_p = -numpy.log(p_values)
         log_p[log_p<=-numpy.log(0.05)] = 0.0
         #log_p[log_p<=-numpy.log(0.005)] = 0.0
@@ -91,34 +108,53 @@ def run_group_searchlight(args, exp, clusters, input_folder):
         print(significant_times)
         #print(significant_times)
         #relevant_times
-        tmin = times[0]
-        info = mne.create_info(ch_names=[v for k, v in electrode_index_to_code.items()], \
-                               #the step is 8 samples, so we divide the original one by 7
-                               sfreq=256/8, \
-                               ch_types='eeg')
-        evoked = mne.EvokedArray(log_p, info=info, tmin=tmin)
-
-        montage=mne.channels.make_standard_montage('biosemi128')
-        evoked.set_montage(montage)
-
         if len(significant_times) >= 1:
 
-            #for i in range(2):
+            evoked = mne.EvokedArray(log_p, info=info, tmin=tmin)
 
-            #mode = 'all' if i==0 else 'significant'
+            evoked.set_montage(montage)
 
-            title='Significant time points for model: {} - awareness: {}'.format(args.computational_model, awareness)
+            title='Significant time points for {} '\
+                  '- awareness: {}'.format(\
+                  marker, awareness)
 
-            #if mode == 'significant':
-            evoked.plot_topomap(ch_type='eeg', time_unit='s', times=significant_times, \
-                                units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', \
-                                vmin=0., scalings={'eeg':1.}, cmap=cmap, title=title)
-            #else:
-                #evoked.plot_topomap(ch_type='eeg', time_unit='s', times=[i for i in evoked.times], units='-log(p)\nif\np<=.05', ncols=12, nrows='auto', vmin=0., scalings={'eeg':1.}, cmap='PuBu', title=title)
+            evoked.plot_topomap(ch_type='eeg', \
+                                time_unit='s', \
+                                times=significant_times, \
+                                units='-log(p)\nif\np<=.05', \
+                                ncols=7, nrows='auto', \
+                                vmin=0., \
+                                scalings={'eeg':1.}, \
+                                cmap=cmap, title=title)
 
             pyplot.savefig(os.path.join(plot_path, \
-                            '{}_{}_rsa_significant_points.png'.format(awareness, args.computational_model)), dpi=600)
+                            '{}_{}_significant_points.png'.\
+                            format(awareness, \
+                            marker)), dpi=600)
             pyplot.clf()
+
+        ### Plotting all the rest
+        all_p = p_values.reshape(original_shape).T
+        evoked = mne.EvokedArray(all_p, info=info, tmin=tmin)
+
+        evoked.set_montage(montage)
+
+        title='Visualization of the time points for {}'\
+              ' - awareness: {}'.format(\
+              marker, awareness)
+
+        evoked.plot_topomap(ch_type='eeg', time_unit='s', \
+                            times=times, \
+                            units='permutation\np-values', \
+                            ncols=7, 
+                            nrows='auto', \
+                            vmax=1., vmin=0., \
+                            scalings={'eeg':1.}, \
+                            cmap=cmap, title=title)
+        pyplot.savefig(os.path.join(plot_path, \
+                        '{}_{}_all_points.png'.format(\
+                          awareness, marker)), dpi=600)
+        pyplot.clf()
 
     with open(os.path.join(plot_path, 'missing_present_subjects_log.txt'), 'w') as o:
         for k, v in missing_per_condition.items():
