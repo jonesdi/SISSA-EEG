@@ -35,7 +35,8 @@ parser.add_argument('--analysis', required=True, \
 
 parser.add_argument('--computational_model', required=False, \
                     choices=['cooc', 'log_cooc', 'ppmi', \
-                             'w2v', 'bert', 'wordnet'], \
+                             'w2v', 'bert', 'wordnet', \
+                             'orthography', 'pixelwise', 'CORnet_V1'], \
                     help='Which model?')
 
 parser.add_argument('--data_split', required=True, \
@@ -79,6 +80,7 @@ elif args.analysis == 'classification':
 
     ### Computing the classification scores
     else:
+        accuracies = list()
         ### One subject at a time
         if args.debugging:
             for n in tqdm(range(exp.n_subjects)):

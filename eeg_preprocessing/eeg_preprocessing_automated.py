@@ -58,9 +58,6 @@ def preprocess_eeg(s):
         accuracy_index = 4
 
     runs = list(range(1, n_runs))
-    ### Fix for subject 14 in exp two
-    if args.experiment_id == 'two' and s == 14:
-        runs = [r for r in runs if r != 3]
 
     ### Preprocessing run by run
     for r in runs:
@@ -119,10 +116,9 @@ def preprocess_eeg(s):
             pass
         else:
             ## Check again the next line
-            real_n_trials = n_trials if (s!=14 and args.experiment_id=='two') else n_trials*2
-            if current_events.shape[0] < real_n_trials:
+            if current_events.shape[0] < n_trials:
                 print('sub {} r {} missing some trials'.format(s, r))
-            assert current_events.shape[0] <= real_n_trials
+            assert current_events.shape[0] <= n_trials
             ### Correcting for a mistake in data acquisition
             if s == 1 and args.experiment_id == 'one':
                 events_from_file = [d for d in data if int(d[3]) != 10]
@@ -135,23 +131,7 @@ def preprocess_eeg(s):
             except AssertionError:
                 assert len(events_from_file) > current_events.shape[0]
 
-                old_events = events_from_file.copy()
-                events_from_file = list()
-                to_be_subtracted = 0
-                for e_i, e in enumerate(old_events):
-                    index = max(0, e_i - to_be_subtracted)
-                    if args.experiment_id == 'one' and s == 1:
-                        trigger = int(e[3])-10
-                    else:
-                        trigger = int(e[-1])
-                    if trigger == current_events[index, 2]:
-                        events_from_file.append(e)
-                    else:
-                        to_be_subtracted += 1
 
-            assert len(events_from_file) == current_events.shape[0]
-            for trig_i in range(len(events_from_file)):
-                assert events_from_file[trig_i][-1] == current_events[trig_i, -1]
        
             ### Cropping so as to remove useless recorded samples before/after testing
             sampling = raw_raw.info['sfreq']
@@ -241,24 +221,53 @@ def preprocess_eeg(s):
                     all_events[k] = v
                 else:
                     all_events[k].extend(v)
-            '''
+            ### Keeping only actually present events
+            old_events = events_from_file.copy()
+            events_from_file = list()
 
+            present_events = 
+
+                to_be_subtracted = 0
+                for e_i, e in enumerate(old_events):
+                    index = max(0, e_i - to_be_subtracted)
+                    if args.experiment_id == 'one' and s == 1:
+                        trigger = int(e[3])-10
+                    else:
+                        trigger = int(e[-1])
+                    if trigger == current_events[index, 2]:
+                        events_from_file.append(e)
+                    else:
+                        to_be_subtracted += 1
+
+            assert len(events_from_file) == current_events.shape[0]
+            for trig_i in range(len(events_from_file)):
+                assert events_from_file[trig_i][-1] == current_events[trig_i, -1]
             ### Preparing the list of epochs actually present in the epochs
             for e_i, e in enumerate(epochs.drop_log):
                 if len(e) == 0:
                     current_epoch = events_from_file[e_i]
-                    assert epochs.events[e_i][-1] == word_to_trigger[current_epoch[0]]
-                    present_events.append([current_epoch[word_index], \
-                                           current_epoch[accuracy_index], \
-                                           current_epoch[pas_index], \
+                    try:
+                        assert epochs.events[e_i][-1] == word_to_trigger[current_epoch[0]]
+                    except AssertionError:
+                        import pdb; pdb.set_trace()
+            '''
+            run_events = list()
+            present_triggers = [e[-1] for e in epochs.events]
+            for ev in events_from_file:
+                if word_to_trigger[ev[0]] in present_triggers:
+                    run_events.append([ev[word_index], \
+                                           ev[accuracy_index], \
+                                           ev[pas_index], \
                                            ]) # word, accuracy, awareness
+            for ev, erp in zip(run_events, epochs.events[:,-1]):
+                assert word_to_trigger[ev[0]] == erp
+            present_events.extend(run_events)
 
     all_epochs = mne.concatenate_epochs(epochs_list)
     assert len(all_epochs) == len(present_events)
     for ev, erp in zip(present_events, all_epochs.events):
         assert word_to_trigger[ev[0]] == erp[-1]
     
-    '''
     ### Writing epochs to file
     epochs_file = 'sub-{:02}_epo.fif'.format(s)
     all_epochs.save(os.path.join(output_folder, epochs_file), \
@@ -271,7 +280,6 @@ def preprocess_eeg(s):
             for v in e:
                 o.write('{}\t'.format(v))
             o.write('\n')
-    '''
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--data_folder', type=str, \
@@ -292,9 +300,11 @@ random_state = 1
 number_of_subjects = len(os.listdir(args.data_folder))
 
 targets = list(range(1, number_of_subjects+1))
+targets = list(range(1, 8+1))
+targets = list(range(9, number_of_subjects+1))
+targets = [7, 9]
 #targets = list(range(15, 15+1))
 
-'''
 with multiprocessing.Pool() as p:
     p.map(preprocess_eeg, targets)
     p.terminate()
@@ -302,3 +312,4 @@ with multiprocessing.Pool() as p:
 '''
 for target in targets:
     preprocess_eeg(target)
+'''

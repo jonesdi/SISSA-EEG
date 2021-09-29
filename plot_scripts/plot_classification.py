@@ -87,6 +87,9 @@ def read_files(args):
 def plot_classification(args):
 
     data_dict, times = read_files(args)
+
+    data_dict = {k : {k_two : [vec for vec in v_two if len(vec)==282] for k_two, v_two in v.items()} for k, v in data_dict.items()}
+
     plot_path = os.path.join('plots', args.analysis, \
                              args.experiment_id, args.data_split)
     os.makedirs(plot_path, exist_ok=True)
@@ -130,9 +133,12 @@ def plot_classification(args):
                            for d in v.keys()])
 
         line_counter = 0
- 
+
         for cat, subs in v.items():
 
+            subs = numpy.array(subs)
+            subs = (subs.T + 0.5).T
+            
             sig_indices = check_statistical_significance(args, subs)
 
             average_data = numpy.average(subs, axis=0)

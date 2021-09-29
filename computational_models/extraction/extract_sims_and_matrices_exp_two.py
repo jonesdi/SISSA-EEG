@@ -10,11 +10,13 @@ import re
 import scipy
 import sys
 
+from matplotlib import image
 from nltk.corpus import wordnet
+from skimage import metrics
 from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer, BertTokenizer, BertModel
 
-from extraction_utils import read_words
+from extraction_utils import levenshtein, read_words
 
 sys.path.append('/import/cogsci/andrea/github/')
 
@@ -41,6 +43,148 @@ output_folder = os.path.join('..', 'similarities', args.experiment_id)
 os.makedirs(output_folder, exist_ok=True)
 
 wiki_folder = os.path.join('..', '..', 'resources', 'it_wiki_pages')
+
+logging.info ('Extracting orthography')
+
+### Loooking at orthography similarities
+
+orthography_sims = list()
+
+with open(os.path.join(output_folder, 'orthography.sims'), 'w') as o:
+    for word_one in it_words:
+        word_one_list = list()
+        for word_two in it_words:
+            if word_one != word_two:
+                current_sim = levenshtein(word_one, word_two)
+                current_corr = current_sim
+            else:
+                current_sim = 0.
+                current_corr = 0.
+            word_one_list.append(current_sim)
+            o.write('{}\t{}\t{}\t{}\n'.format(word_one, word_two, current_sim, current_corr))
+        orthography_sims.append(word_one_list)
+
+### Plotting the matrix
+
+title = 'Confusion matrix for orthography distance'
+
+file_path = os.path.join(plot_path, 'orthography_confusion_exp_{}.png'.format(args.experiment_id))
+confusion_matrix_simple(numpy.array(orthography_sims), it_words, title, file_path, text=False, \
+                        vmin=numpy.amin(orthography_sims), vmax=numpy.amax(orthography_sims))
+
+CORnet_layers = list()
+
+layers = ['V1', 'V2', 'V4', 'decoder']
+layers = ['V1']
+for layer in layers:
+
+    logging.info ('Extracting CORnet {}'.format(layer))
+
+    ### Loooking at orthography similarities
+    features_folder = os.path.join('..', '..', 'resources', 'CORnet_{}'.format(layer)) 
+    feat_dict = dict()
+    for w in it_words:
+        with open(os.path.join(features_folder, '{}.layer'.format(w))) as i:
+            feats = [l.strip().split('\t') for l in i.readlines()][0]
+        feats = numpy.array(feats, dtype=numpy.double)
+        feat_dict[w] = feats
+
+    V1_sims = list()
+
+    with open(os.path.join(output_folder, 'CORnet_{}.sims'.format(layer)), 'w') as o:
+        for word_one in it_words:
+            img_one = feat_dict[word_one]
+            word_one_list = list()
+            for word_two in it_words:
+                if word_one != word_two:
+                    img_two = feat_dict[word_two]
+                    current_sim = 1. - scipy.stats.spearmanr(img_one, img_two)[0]
+                    current_corr = 1. - scipy.stats.pearsonr(img_one, img_two)[0]
+                else:
+                    current_sim = 1.
+                    current_corr = 1.
+                word_one_list.append(current_sim)
+                o.write('{}\t{}\t{}\t{}\n'.format(word_one, word_two, current_sim, current_corr))
+            V1_sims.append(word_one_list)
+
+    ### Plotting the matrix
+
+    title = 'Confusion matrix for CORnet {}'.format(layer)
+
+    file_path = os.path.join(plot_path, 'CORnet_{}_confusion_exp_{}.png'.format(layer, args.experiment_id))
+    confusion_matrix_simple(numpy.array(V1_sims), it_words, title, file_path, text=False, \
+                            vmin=numpy.amin(V1_sims), vmax=numpy.amax(V1_sims))
+
+    CORnet_layers.append(V1_sims)
+
+logging.info('Extracting images')
+
+images_path = os.path.join('..', '..', 'resources', 'stimuli_images') 
+word_dict = dict()
+for w in it_words:
+    im = image.imread(os.path.join(images_path, '{}.png'.format(w)))
+    word_dict[w] = im
+
+print('Now computing pairwise similarities...')
+
+pixelwise_sims = list()
+
+with open(os.path.join(output_folder, 'pixelwise.sims'), 'w') as o:
+    for word_one in it_words:
+        word_one_list = list()
+        im_one = word_dict[word_one]
+        for word_two in it_words:
+            if word_one != word_two:
+                im_two = word_dict[word_two]
+                total = 0
+                same = 0
+
+                for i in range(im_one.shape[0]):
+                    for j in range(im_one.shape[1]):
+                        if im_one[i,j].tolist() == im_two[i,j].tolist():
+                            same += 1
+                        total += 1
+
+                current_sim = 1. - metrics.structural_similarity(im_one, im_two, multichannel=True)
+                current_corr = same/total
+
+            else:
+                current_sim = 0.
+                current_corr = 0.
+
+            word_one_list.append(current_sim)
+            o.write('{}\t{}\t{}\t{}\n'.format(word_one, word_two, current_sim, current_corr))
+        pixelwise_sims.append(word_one_list)
+
+'''
+print('Now unit normalizing...')
+norm_sims = collections.defaultdict(list)
+for i in range(2):
+    
+    std = numpy.nanstd([v[i] for k, v in sims.items()])
+    mean = numpy.nanmean([v[i] for k, v in sims.items()])
+    #l1_norm = sum([v[i] for k, v in sims.items()])
+    #max_value = max([v[i] for k, v in sims.items()])
+    #min_value = min([v[i] for k, v in sims.items()])
+    for c, res in sims.items():
+        #norm_sims[c].append(res[i]/l1_norm)
+        norm_sims[c].append((res[i]-mean)/std)
+        #norm_sims[c].append((res[i]-min_value)/(max_value-min_value))
+
+print(stats.pearsonr([k[0] for i, k in norm_sims.items()], [k[1] for i, k in norm_sims.items()]))
+
+with open('../rsa_analyses/computational_models/visual/visual.sims', 'w') as o:
+    o.write('Word 1\tWord 2\tPixel overlap\tStructural similarity\n')
+    for c, res in norm_sims.items():
+        o.write('{}\t{}\t{}\t{}\n'.format(c[0], c[1], res[0], res[1]))
+'''
+### Plotting the matrix
+
+title = 'Confusion matrix for pixelwise'
+
+file_path = os.path.join(plot_path, 'pixelwise_confusion_exp_{}.png'.format(args.experiment_id))
+confusion_matrix_simple(numpy.array(pixelwise_sims), it_words, title, file_path, text=False, \
+                        vmin=numpy.amin(pixelwise_sims), vmax=numpy.amax(pixelwise_sims))
 
 logging.info ('Extracting Word2Vec')
 
@@ -306,9 +450,9 @@ logging.info('Plotting the confusion matrix comparing all the models')
 
 ### Plotting the models correlations
 
-models = [coocs, log_coocs, ppmis, w2v_sims, berts, wordnets]
+models = [coocs, log_coocs, ppmis, w2v_sims, berts, wordnets, pixelwise_sims, orthography_sims] + CORnet_layers
 #models = [w2v_sims, berts, wordnets]
-names = ['raw co-occurrence', 'log co-occurrence', 'PPMI', 'Word2Vec', 'mBERT', 'WordNet']
+names = ['raw co-occurrence', 'log co-occurrence', 'PPMI', 'Word2Vec', 'mBERT', 'WordNet', 'Pixels', 'Orthography'] + layers
 #names = ['Word2Vec', 'BERT', 'WordNet']
 
 flattened = list()

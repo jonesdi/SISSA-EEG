@@ -60,6 +60,7 @@ class ExperimentInfo:
 class SubjectData:
 
     def __init__(self, experiment_info, n, args):
+        self.subject = n
         self.exp = experiment_info
         self.eeg_path = experiment_info.paths[n][0]
         self.events_path = experiment_info.paths[n][1]
@@ -193,7 +194,7 @@ class SubjectData:
                 #if total_number_words >= 5: ### Employing conditions with at least 5 words
                 if total_number_words < 10: ### Employing conditions with at least 10 words
                     if 'searchlight' not in args.analysis:
-                        print('not enough words for: sub {}, condition {}'.format(n+1, awareness))
+                        print('not enough words for: sub {}, condition {}'.format(self.subject+1, awareness))
                 else:
                     current_data = {k : v[:total_number_words] for k, v in current_data.items()}
 

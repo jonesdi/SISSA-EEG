@@ -97,14 +97,14 @@ def run_classification(all_args):
 
     for awareness, vecs in data.items():    
 
-        test_split = eeg.permutations[awareness]
+        test_splits = eeg.permutations[awareness]
 
         ### Time-resolved classification
 
         ### Classifying each time point
         scores_times = list()
         for time_i, time in tqdm(enumerate(times)):
-            time_t_data = {k : v[:, time_i] for k, v in vecs.items()}
+            time_t_data = {k : [vec[:, time_i] for vec in v] for k, v in vecs.items()}
             scores_times.append(classify(time_t_data, test_splits))
             del time_t_data
 

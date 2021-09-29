@@ -74,8 +74,8 @@ def run_group_searchlight(args, exp, clusters, input_folder):
                                                            adjacency=mne_adj_matrix, \
                                                            threshold=dict(start=0, step=0.2), \
                                                            n_jobs=os.cpu_count()-1, \
-                                                           #n_permutations=8000, \
-                                                           #n_permutations='all', \
+                                                           #n_permutations=4096, \
+                                                           n_permutations='all', \
                                                            )
 
         original_shape = t_stats.shape
@@ -135,6 +135,7 @@ def run_group_searchlight(args, exp, clusters, input_folder):
 
         ### Plotting all the rest
         all_p = p_values.reshape(original_shape).T
+        #all_t = t_stats.reshape(original_shape).T
         evoked = mne.EvokedArray(all_p, info=info, tmin=tmin)
 
         evoked.set_montage(montage)
@@ -150,7 +151,8 @@ def run_group_searchlight(args, exp, clusters, input_folder):
                             nrows='auto', \
                             vmax=1., vmin=0., \
                             scalings={'eeg':1.}, \
-                            cmap=cmap, title=title)
+                            cmap= '{}_r'.format(cmap), \
+                            title=title)
         pyplot.savefig(os.path.join(plot_path, \
                         '{}_{}_all_points.png'.format(\
                           awareness, marker)), dpi=600)
