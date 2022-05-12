@@ -4,11 +4,12 @@ import os
 
 from matplotlib import pyplot
 from scipy import stats
+numpy.seterr(all='raise')
 
 plot_path = os.path.join('plots', 'two', 'behavioural')
 os.makedirs(plot_path, exist_ok=True)
 
-file_path = os.path.join('results', 'two', 'behavioural', \
+file_path = os.path.join('results', 'behavioural', 'two', 
                                       'experiment_two.csv')
 with open(file_path) as i:
     lines = [l.strip().split(',') for l in i.readlines()]
@@ -127,14 +128,59 @@ for k_p_r_i, k_p_r in enumerate(results.items()):
     ax.scatter([i+1+k_p_r_i*0.1 for i in range(len(k_p_r[1]))], k_p_r[1], \
                             label=mapper[k_p_r[0]])
 ax.legend()
+ax.hlines(y=0.5, xmin=0, xmax=len(subjects)+1, alpha=0.7, color='darkgray', linestyles='dotted')
+ax.hlines(y=1., xmin=0, xmax=len(subjects)+1, alpha=0.7, color='darkgray', linestyles='dotted')
 ax.set_xticks([s+0.1 for s in subjects])
 ax.set_xticklabels(subjects)
-title = 'AUC scores across subjects'
+title = 'Accuracy scores across subjects'
 ax.set_title(title, pad=40.)
 ax.legend(loc=(0.25, 1.025), ncol=3)
 pyplot.tight_layout()
 
-file_path = os.path.join(plot_path, 'auc.png')
+file_path = os.path.join(plot_path, 'accuracies.png')
+pyplot.savefig(file_path)
+#pyplot.show()
+
+pyplot.clf()
+
+## D-prime
+
+pas = [1,2,3]
+acc = ['correct', 'wrong']
+
+results = {p : list() for p in pas}
+
+for s in subjects:
+    s_data = [(int(w), res_dict['Accuracy'][w_i], res_dict['required_answer'][w_i]) for w_i, w in enumerate(res_dict['PAS score']) if int(res_dict['subject'][w_i])==s]
+    for p in pas:
+        current_corr = len([1 for s_p, s_a, req in s_data if s_p==p and s_a=='correct' and req=='YES']) / len([1 for s_p, s_a, req in s_data if req=='YES'])
+        current_wrong = len([1 for s_p, s_a, req in s_data if s_p==p and s_a=='wrong' and req=='NO']) / len([1 for s_p, s_a, req in s_data if req=='NO'])
+        z_hit = stats.norm.ppf(current_corr)
+        z_fa = stats.norm.ppf(current_wrong)
+        try:
+            d_prime = z_hit - z_fa
+        except FloatingPointError:
+            d_prime = numpy.nan
+        #print([p, d_prime])
+        results[p].append(d_prime)
+
+fig, ax = pyplot.subplots()
+
+#ax.violinplot([p_r for k, p_r in results.items()])
+for k_p_r_i, k_p_r in enumerate(results.items()):
+    ax.scatter([i+1+k_p_r_i*0.1 for i in range(len(k_p_r[1]))], k_p_r[1], \
+                            label=mapper[k_p_r[0]])
+ax.legend()
+ax.hlines(y=0.0, xmin=0, xmax=len(subjects)+1, alpha=0.7, color='darkgray', linestyles='dotted')
+ax.hlines(y=1.0, xmin=0, xmax=len(subjects)+1, alpha=0.7, color='darkgray', linestyles='dotted')
+ax.set_xticks([s+0.1 for s in subjects])
+ax.set_xticklabels(subjects)
+title = 'D-prime scores across subjects'
+ax.set_title(title, pad=40.)
+ax.legend(loc=(0.25, 1.025), ncol=3)
+pyplot.tight_layout()
+
+file_path = os.path.join(plot_path, 'dprime.png')
 pyplot.savefig(file_path)
 #pyplot.show()
 

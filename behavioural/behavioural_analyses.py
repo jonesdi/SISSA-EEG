@@ -14,7 +14,6 @@ from utils_two import read_words_and_triggers
 word_to_trigger, questions = read_words_and_triggers(\
                                additional_path=additional_path, \
                                          return_questions=True)
-
 def read_results(args, exp):
 
     relevant_indices = [0, 2, 3, 4, 5] if args.experiment_id == 'two' \
@@ -42,6 +41,8 @@ def read_results(args, exp):
                     container_dict[header[i]] = list()
             if 'subject' not in container_dict.keys():
                 container_dict['subject'] = list()
+            if 'required_answer' not in container_dict.keys():
+                container_dict['required_answer'] = list()
             
             ### Fix for experiment 2
             for l in data:
@@ -51,7 +52,9 @@ def read_results(args, exp):
             ### Adding the data
             for l in data:
                 for i in relevant_indices:
-                    if i in [2, 6]:
+                    if args.experiment_id == 'two' and i == 2:
+                        value = int(l[i])
+                    elif args.experiment_id == 'one' and i == 6:
                         value = int(l[i])
                     else:
                         '''
@@ -72,6 +75,18 @@ def read_results(args, exp):
                         value = l[i]
                     container_dict[header[i]].append(value)
                 container_dict['subject'].append(s)
+                ### Question type
+                if l[0] != '_':
+                    ### Question index is 1
+                    quest = l[1]
+                    if quest in questions[l[0]]:
+                        ans = 'YES'
+                    else:
+                        ans = 'NO'
+                else:
+                    ans = 'NO'
+                container_dict['required_answer'].append(ans)
+
 
             '''
             ### Writing to file the corrected versions

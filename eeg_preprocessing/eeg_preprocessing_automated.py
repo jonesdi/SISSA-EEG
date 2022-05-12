@@ -57,6 +57,12 @@ def preprocess_eeg(s):
         pas_index = 2
         accuracy_index = 4
 
+        ### Loading the questions
+        with open('../lab/lab_two/chosen_features.txt') as i:
+            lines = [l.strip().split() for l in i][1:]
+        assert len(lines) == 32
+        questions = {l[0] : [q.replace('_',' ') for q in l[1:]] for l in lines}
+
     runs = list(range(1, n_runs))
 
     ### Preprocessing run by run
@@ -69,14 +75,20 @@ def preprocess_eeg(s):
 
         ### Fixing for experiment two
         except AssertionError:
-            if s == 10:
+            if s in [8, 10]:
                 run_path = run_path.replace('sub-10_eeg/', 'sub_10-eeg/').replace('run-', 'eeg-')
                 os.path.exists(run_path)
 
-        raw_raw = mne.io.read_raw_bdf(run_path, preload=True, \
-                                      eog=eog_channels, \
-                                      exclude=excluded_channels, \
-                                      verbose=False)
+        try:
+            raw_raw = mne.io.read_raw_bdf(run_path, preload=True, \
+                                          eog=eog_channels, \
+                                          exclude=excluded_channels, \
+                                          verbose=False)
+        except ValueError:
+            print('\n')
+            print(run_path)
+            print('\n')
+            break
         raw_raw.set_montage(montage)
 
         ### Extracting events from file
@@ -130,7 +142,6 @@ def preprocess_eeg(s):
 
             except AssertionError:
                 assert len(events_from_file) > current_events.shape[0]
-
 
        
             ### Cropping so as to remove useless recorded samples before/after testing
@@ -255,13 +266,31 @@ def preprocess_eeg(s):
             present_triggers = [e[-1] for e in epochs.events]
             for ev in events_from_file:
                 if word_to_trigger[ev[0]] in present_triggers:
+                    if ev[word_index] != '':
+                        ### Question index is 1
+                        quest = ev[1]
+                        if quest in questions[ev[word_index]]:
+                            ans = 'YES'
+                        else:
+                            ans = 'NO'
+                    else:
+                        ans = 'NO'
                     run_events.append([ev[word_index], \
                                            ev[accuracy_index], \
                                            ev[pas_index], \
+                                           ans
                                            ]) # word, accuracy, awareness
             for ev, erp in zip(run_events, epochs.events[:,-1]):
-                assert word_to_trigger[ev[0]] == erp
+                try:
+                    assert word_to_trigger[ev[0]] == erp
+                except AssertionError:
+                    print('\n')
+                    print(word_to_trigger[ev[0]])
+                    print(run_path)
+                    print('\n')
+                    break
             present_events.extend(run_events)
+    
 
     all_epochs = mne.concatenate_epochs(epochs_list)
     assert len(all_epochs) == len(present_events)
@@ -275,7 +304,7 @@ def preprocess_eeg(s):
 
     ### Writing events to file
     with open(os.path.join(output_folder, 'sub-{:02}_epo.events'.format(s)), 'w') as o:
-        o.write('Word\tAccuracy\tAwareness\n')
+        o.write('Word\tAccuracy\tAwareness\tRequired answer\n')
         for e in present_events:
             for v in e:
                 o.write('{}\t'.format(v))
@@ -300,9 +329,9 @@ random_state = 1
 number_of_subjects = len(os.listdir(args.data_folder))
 
 targets = list(range(1, number_of_subjects+1))
-targets = list(range(1, 8+1))
-targets = list(range(9, number_of_subjects+1))
-targets = [7, 9]
+#targets = list(range(1, 8+1))
+#targets = list(range(9, number_of_subjects+1))
+#targets = [7, 9]
 #targets = list(range(15, 15+1))
 
 with multiprocessing.Pool() as p:

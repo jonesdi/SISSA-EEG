@@ -7,6 +7,7 @@ import numpy
 
 def get_searchlight_groups(max_distance=0.02):
 
+    max_distance = float(max_distance)
     montage = mne.channels.make_standard_montage('biosemi128', head_size=0.088)
     positions = montage.get_positions()['ch_pos']
     position_indices = {electrode : electrode_index for electrode_index, electrode in enumerate(positions.keys())}
@@ -38,7 +39,7 @@ args = parser.parse_args()
 
 searchlight_groups = get_searchlight_groups(args.max_distance)
 
-with open('searchlight_clusters_{}mm.txt'.format(int(args.max_distance*1000)), 'w') as o:
+with open('searchlight_clusters_{}mm.txt'.format(int(float(args.max_distance)*1000)), 'w') as o:
     o.write('Central electrode (CE) code\tCE index\tNeighbors\n')
     for channel_info, other_channels_list in searchlight_groups.items():
         o.write('{}\t{}\t'.format(channel_info[0], channel_info[1]))
