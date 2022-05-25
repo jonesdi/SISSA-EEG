@@ -47,7 +47,7 @@ def generate_runs(animals_and_objects):
     runs_questions = list()
     runs_answers = list()
     
-    for i in range(16):
+    for i in range(24):
         
         empty_stimulus = random.randint(0, 32)
         
@@ -98,6 +98,6 @@ def generate_runs(animals_and_objects):
     runs_questions = numpy.array(runs_questions)
     runs_answers = numpy.array(runs_answers)
     for data in [runs_words, runs_questions, runs_answers]:
-        assert data.shape == (16, 33)
+        assert data.shape == (24, 33)
     
     return runs_words, runs_questions, runs_answers

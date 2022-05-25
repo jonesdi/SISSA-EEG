@@ -36,8 +36,9 @@ class Messages:
                          
         self.end = 'Questa era l\'ultima sessione, e l\'esperimento ora è finito. \n\n\nGrazie per aver partecipato!'
         
-        self.rest = lambda run, countdown : 'Fine della sessione {} su 16 - ottimo lavoro!\n\n'\
+        self.rest = lambda run, countdown, counter : 'Fine della sessione {} su 16 - ottimo lavoro!\n\n'\
                                             'Ora hai 1 minuto di pausa prima di cominciare la prossima sessione.\n\n'\
-                                            '00.{:02}'.format(run, countdown)
+                                            '00.{:02}\n\n\n'\
+                                            '{} {} {} {}'.format(run, countdown, counter[1], counter[2], counter[3], counter[4])
                                             
         self.after_rest = 'Procediamo! \n\n\n [Premi la barra spaziatrice]'

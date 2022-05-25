@@ -49,12 +49,12 @@ ax.bar(subjects, all_wrong, bottom=all_correct, label='wrong')
 
 ax.set_xticks(subjects)
 
-title = 'Accuracy scores for each subject'
+title = 'Overall performances for each subject'
 ax.set_title(title, pad=40.)
 ax.legend(loc=(0.25, 1.025), ncol=2)
 pyplot.tight_layout()
 #pyplot.show()
-file_path = os.path.join(plot_path, 'accuracy.png')
+file_path = os.path.join(plot_path, 'overall_performance.png')
 pyplot.savefig(file_path)
 
 pyplot.clf()

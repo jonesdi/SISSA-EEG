@@ -6,7 +6,7 @@ import random
 from psychopy import core, event, gui, parallel, visual
 
 from messages_two import Messages
-from utils_two import generate_runs
+from utils_two import generate_runs, read_words_and_triggers
 
 # Asking for the experimental session information
 
@@ -32,7 +32,7 @@ if in_the_lab:
     outputPort.setData(0)
 
 # Read words and properties
-word_to_trigger = read_words_and_triggers()
+word_to_trigger, animals_and_objects = read_words_and_triggers(return_questions=True)
 
 
 # Loading the messages
@@ -106,7 +106,7 @@ for t in random_trials:
     
     current_word = words[r, t]
     current_question = questions[r, t]
-    current_answer = questions[r, t]
+    current_answer = answers[r, t]
 
     # Fixation cross
     textStimulus.opacity = 1.
@@ -181,6 +181,8 @@ subject_results = list()
 #for r in range(1):
 for r in range(24):
     
+    counter = {1 : 0, 2 : 0, 3 : 0, 4 : 0}
+    
     run_results = list()
 
     for t in range(33):
@@ -188,7 +190,7 @@ for r in range(24):
         
         current_word = words[r, t]
         current_question = questions[r, t]
-        current_answer = questions[r, t]
+        current_answer = answers[r, t]
         
         if in_the_lab:
             outputPort.setData(0) # Closing the parallel port
@@ -250,6 +252,10 @@ for r in range(24):
             new_opacity = min(1., old_opacity-.01)
         elif subjective_answer == '3':
             new_opacity = max(0., old_opacity-.02)
+            
+        counter[int(subjective_answer)] += 1
+        if int(subjective_answer) == 3:
+            counter[4] += 1
         
         # Objective question (based on semantic features)
         textStimulus.text = messages.obj_question(current_question)
@@ -299,9 +305,9 @@ for r in range(24):
     
     # Rest one minute
     if r < 23:
-        for _ in range(one_second*60): 
+        for _ in range(one_second*30): 
             countdown = minuteCounter[_]
-            textStimulus.text = messages.rest(r+1, countdown)
+            textStimulus.text = messages.rest(r+1, countdown, counter)
             textStimulus.draw()
             win.flip()
             keypress = event.getKeys(keyList=['n'])
